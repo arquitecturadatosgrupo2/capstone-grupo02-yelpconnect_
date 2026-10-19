@@ -1,0 +1,56 @@
+resources:
+  jobs:
+    capstone_yelp:
+      name: Capstone_YELP
+      queue:
+        enabled: true
+      performance_target: PERFORMANCE_OPTIMIZED
+      tasks:
+        - task_key: BRONZE_business
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: ../pipelines/nb_business_bronze_to_silver
+            source: WORKSPACE
+          timeout_seconds: 0
+
+        - task_key: BRONZE_checkin
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: ../pipelines/nb_checkin_bronze_to_silver
+            source: WORKSPACE
+          timeout_seconds: 0
+
+        - task_key: BRONZE_tip
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: ../pipelines/nb_tip_bronze_to_silver
+            source: WORKSPACE
+          timeout_seconds: 0
+
+        - task_key: BRONZE_review
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: ../pipelines/nb_review_bronze_to_silver
+            source: WORKSPACE
+          timeout_seconds: 0
+
+        - task_key: BRONZE_user
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: ../pipelines/nb_user_bronze_to_silver
+            source: WORKSPACE
+          timeout_seconds: 0
+
+        - task_key: BRONZE_fraud_rule
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: ../pipelines/nb_fraud_rule_bronze_to_silver
+            source: WORKSPACE
+          timeout_seconds: 0
+
+        - task_key: BRONZE_trust_safety_area
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: ../pipelines/nb_slv_trust_safety_area_bronze_to_silver
+            source: WORKSPACE
+          timeout_seconds: 0

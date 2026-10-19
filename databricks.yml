@@ -1,0 +1,10 @@
+bundle:
+  name: capstone_yelp
+
+targets:
+  dev:
+    mode: development
+    default: true
+
+  prod:
+    mode: production
