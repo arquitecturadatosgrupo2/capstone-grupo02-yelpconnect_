@@ -9,48 +9,48 @@ resources:
         - task_key: BRONZE_business
           run_if: ALL_SUCCESS
           notebook_task:
-            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_business_bronze_to_silver
+            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_business_bronze_to_silver.ipynb
             source: WORKSPACE
           timeout_seconds: 0
 
         - task_key: BRONZE_checkin
           run_if: ALL_SUCCESS
           notebook_task:
-            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_checkin_bronze_to_silver
+            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_checkin_bronze_to_silver.ipynb
             source: WORKSPACE
           timeout_seconds: 0
 
         - task_key: BRONZE_tip
           run_if: ALL_SUCCESS
           notebook_task:
-            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_tip_bronze_to_silver
+            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_tip_bronze_to_silver.ipynb
             source: WORKSPACE
           timeout_seconds: 0
 
         - task_key: BRONZE_review
           run_if: ALL_SUCCESS
           notebook_task:
-            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_review_bronze_to_silver
+            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_review_bronze_to_silver.ipynb
             source: WORKSPACE
           timeout_seconds: 0
 
         - task_key: BRONZE_user
           run_if: ALL_SUCCESS
           notebook_task:
-            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_user_bronze_to_silver
+            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_user_bronze_to_silver.ipynb
             source: WORKSPACE
           timeout_seconds: 0
 
         - task_key: BRONZE_fraud_rule
           run_if: ALL_SUCCESS
           notebook_task:
-            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_fraud_rule_bronze_to_silver
+            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_fraud_rule_bronze_to_silver.ipynb
             source: WORKSPACE
           timeout_seconds: 0
 
         - task_key: BRONZE_trust_safety_area
           run_if: ALL_SUCCESS
           notebook_task:
-            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_slv_trust_safety_area_bronze_to_silver
+            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_slv_trust_safety_area_bronze_to_silver.ipynb
             source: WORKSPACE
           timeout_seconds: 0
