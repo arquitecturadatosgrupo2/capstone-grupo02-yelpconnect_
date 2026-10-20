@@ -1,4 +1,11 @@
 # Databricks notebook source
+# /// script
+# [tool.databricks.environment]
+# environment_version = "5"
+# dependencies = [
+#   "openpyxl",
+# ]
+# ///
 # MAGIC %md
 # MAGIC # E4.1 · Glosario de Negocio
 # MAGIC **Cierra con:** M3 MDM y Metadata · **Formato oficial:** plantilla institucional
@@ -26,6 +33,11 @@
 spark.sql("CREATE VOLUME IF NOT EXISTS workspace.yelp_gov.artefactos")
 RUTA = "/Volumes/workspace/yelp_gov/artefactos/Glosario_de_terminos_de_negocio_YelpConnect.xlsx"
 print(f"Suba el Excel completado a: {RUTA}")
+
+# COMMAND ----------
+
+# DBTITLE 1,Install openpyxl dependency
+# MAGIC %pip install openpyxl
 
 # COMMAND ----------
 
@@ -71,12 +83,12 @@ print(f"✔ Glosario válido: {n} términos · {sin_dominio} dominios · "
 
 # COMMAND ----------
 
-# DBTITLE 1: Conflictos semánticos del caso — verificación explícita
 # MAGIC %sql
+# MAGIC -- DBTITLE 1: Conflictos semánticos del caso — verificación explícita
 # MAGIC -- Los tres conflictos del enunciado deben estar resueltos con un término propio
 # MAGIC SELECT termino, dominio_datos, propietario
 # MAGIC FROM workspace.yelp_gov.glosario_negocio
-# MAGIC WHERE lower(termino) LIKE '%verificada%'      -- Marketing ↔ Trust & Safety
+# MAGIC WHERE lower(termino) LIKE '%verificada%'      -- Marketing <-> Trust & Safety
 # MAGIC    OR lower(termino) LIKE '%check-in válido%' -- Operaciones Comerciales
 # MAGIC    OR lower(termino) LIKE '%duplicada%'       -- Marketing
 # MAGIC ORDER BY termino;
