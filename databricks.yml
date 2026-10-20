@@ -1,0 +1,13 @@
+bundle:
+  name: capstone_yelp
+
+include:
+  - resources/*.yml
+
+targets:
+  dev:
+    mode: development
+    default: true
+
+  prod:
+    mode: production
