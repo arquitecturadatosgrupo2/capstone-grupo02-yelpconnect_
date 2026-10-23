@@ -36,7 +36,7 @@
 # MAGIC   fecha_carga   TIMESTAMP       COMMENT 'Timestamp de procesamiento del pipeline (auditoría)',
 # MAGIC   CONSTRAINT pk_business PRIMARY KEY (business_id)
 # MAGIC )
-# MAGIC COMMENT 'Negocios locales registrados en YelpConnect — capa conformada. Data Owner: Operaciones Comerciales.'
+# MAGIC COMMENT 'Negocios locales registrados en YelpConnect — capa conformada. Data Owner: Producto (Andrew Collins).'
 # MAGIC TBLPROPERTIES (delta.enableChangeDataFeed = true);
 # MAGIC
 # MAGIC CREATE TABLE IF NOT EXISTS workspace.yelp_silver.slv_user (
@@ -55,7 +55,7 @@
 # MAGIC   fecha_carga        TIMESTAMP NOT NULL COMMENT 'Timestamp de procesamiento del pipeline (auditoría)',
 # MAGIC   CONSTRAINT pk_user PRIMARY KEY (user_id)
 # MAGIC )
-# MAGIC COMMENT 'Usuarios registrados en YelpConnect — capa conformada. Data Owner: Marketing.'
+# MAGIC COMMENT 'Usuarios registrados en YelpConnect — capa conformada. Data Owner: Producto (Andrew Collins).'
 # MAGIC TBLPROPERTIES (delta.enableChangeDataFeed = true);
 
 # COMMAND ----------
@@ -79,7 +79,7 @@
 # MAGIC   CONSTRAINT fk_review_business FOREIGN KEY (business_id) REFERENCES workspace.yelp_silver.slv_business (business_id),
 # MAGIC   CONSTRAINT fk_review_user FOREIGN KEY (user_id) REFERENCES workspace.yelp_silver.slv_user (user_id)
 # MAGIC )
-# MAGIC COMMENT 'Reseñas de usuarios sobre negocios, sin duplicados lógicos — capa conformada. Data Owner: Trust & Safety.'
+# MAGIC COMMENT 'Reseñas de usuarios sobre negocios, sin duplicados lógicos — capa conformada. Data Owner: Trust & Safety (Rafael Nakamura).'
 # MAGIC TBLPROPERTIES (delta.enableChangeDataFeed = true);
 # MAGIC
 # MAGIC -- Las reseñas que no pasan las reglas de integridad no se descartan: quedan aquí con su motivo
@@ -97,7 +97,7 @@
 # MAGIC   review_id_conservado STRING             COMMENT 'Para duplicados: review_id de la reseña que sí quedó en slv_review',
 # MAGIC   fecha_carga          TIMESTAMP NOT NULL COMMENT 'Timestamp de procesamiento del pipeline (auditoría)'
 # MAGIC )
-# MAGIC COMMENT 'Reseñas apartadas de slv_review por reglas de integridad, con su motivo. Data Owner: Trust & Safety.'
+# MAGIC COMMENT 'Reseñas apartadas de slv_review por reglas de integridad, con su motivo. Data Owner: Trust & Safety (Rafael Nakamura).'
 # MAGIC TBLPROPERTIES (delta.enableChangeDataFeed = true);
 # MAGIC
 # MAGIC -- checkin llega como string de fechas concatenadas: decisión de modelado = grano evento (1 fila = 1 check-in)
@@ -109,7 +109,7 @@
 # MAGIC   CONSTRAINT pk_checkin PRIMARY KEY (checkin_id),
 # MAGIC   CONSTRAINT fk_checkin_business FOREIGN KEY (business_id) REFERENCES workspace.yelp_silver.slv_business (business_id)
 # MAGIC )
-# MAGIC COMMENT 'Check-ins de clientes en negocios — granularidad evento (explodido del string original). Data Owner: Operaciones Comerciales.'
+# MAGIC COMMENT 'Check-ins de clientes en negocios — granularidad evento (explodido del string original). Data Owner: Producto (Andrew Collins).'
 # MAGIC TBLPROPERTIES (delta.enableChangeDataFeed = true);
 # MAGIC
 # MAGIC CREATE TABLE IF NOT EXISTS workspace.yelp_silver.slv_tip (
@@ -124,7 +124,7 @@
 # MAGIC   CONSTRAINT fk_tip_user FOREIGN KEY (user_id) REFERENCES workspace.yelp_silver.slv_user (user_id),
 # MAGIC   CONSTRAINT fk_tip_business FOREIGN KEY (business_id) REFERENCES workspace.yelp_silver.slv_business (business_id)
 # MAGIC )
-# MAGIC COMMENT 'Tips (recomendaciones cortas) sobre negocios — capa conformada. Data Owner: Marketing.'
+# MAGIC COMMENT 'Tips (recomendaciones cortas) sobre negocios — capa conformada. Data Owner: Trust & Safety (Rafael Nakamura).'
 # MAGIC TBLPROPERTIES (delta.enableChangeDataFeed = true);
 
 # COMMAND ----------
@@ -139,7 +139,7 @@
 # MAGIC   fecha_carga TIMESTAMP NOT NULL COMMENT 'Timestamp de procesamiento del pipeline (auditoría)',
 # MAGIC   CONSTRAINT pk_trust_safety PRIMARY KEY (team_id)
 # MAGIC )
-# MAGIC COMMENT 'Equipos de Trust & Safety — capa conformada. Data Owner: Trust & Safety.'
+# MAGIC COMMENT 'Equipos de Trust & Safety — capa conformada. Data Owner: Trust & Safety (Rafael Nakamura).'
 # MAGIC TBLPROPERTIES (delta.enableChangeDataFeed = true);
 # MAGIC
 # MAGIC -- Catálogo de reglas que gobierna gold: cambiar estado, umbral o puntos aquí cambia el resultado del pipeline
@@ -157,7 +157,7 @@
 # MAGIC   CONSTRAINT pk_fraud_rule PRIMARY KEY (fraud_rule_id),
 # MAGIC   CONSTRAINT fk_fraud_rule_team FOREIGN KEY (team_id) REFERENCES workspace.yelp_silver.slv_trust_safety_area (team_id)
 # MAGIC )
-# MAGIC COMMENT 'Catálogo de reglas de detección de fraude con sus parámetros y equipo responsable — capa conformada. Data Owner: Trust & Safety.'
+# MAGIC COMMENT 'Catálogo de reglas de detección de fraude con sus parámetros y equipo responsable — capa conformada. Data Owner: Trust & Safety (Rafael Nakamura).'
 # MAGIC TBLPROPERTIES (delta.enableChangeDataFeed = true);
 
 # COMMAND ----------
@@ -205,7 +205,7 @@
 # MAGIC   fecha_actualizacion                TIMESTAMP COMMENT 'Timestamp de cálculo de la métrica',
 # MAGIC   CONSTRAINT pk_user_fraud PRIMARY KEY (user_id)
 # MAGIC )
-# MAGIC COMMENT 'Perfil analítico de riesgo por usuario para detección de cuentas falsas y bots. Data Owner: Trust & Safety.'
+# MAGIC COMMENT 'Perfil analítico de riesgo por usuario para detección de cuentas falsas y bots. Data Owner: Trust & Safety (Rafael Nakamura).'
 # MAGIC TBLPROPERTIES (delta.enableChangeDataFeed = true);
 # MAGIC
 # MAGIC CREATE TABLE IF NOT EXISTS workspace.yelp_gold.gld_business_anomaly_bursts (
@@ -220,7 +220,7 @@
 # MAGIC   fecha_actualizacion        TIMESTAMP COMMENT 'Timestamp de procesamiento',
 # MAGIC   CONSTRAINT pk_business_anomaly PRIMARY KEY (business_id, fecha_ventana)
 # MAGIC )
-# MAGIC COMMENT 'Anomalías y ráfagas de reseñas por negocio y día. Data Owner: Trust & Safety.'
+# MAGIC COMMENT 'Anomalías y ráfagas de reseñas por negocio y día. Data Owner: Trust & Safety (Rafael Nakamura).'
 # MAGIC TBLPROPERTIES (delta.enableChangeDataFeed = true);
 # MAGIC
 # MAGIC CREATE TABLE IF NOT EXISTS workspace.yelp_gold.gld_trust_governance (
@@ -241,7 +241,7 @@
 # MAGIC   fecha_actualizacion TIMESTAMP COMMENT 'Timestamp de consolidación',
 # MAGIC   CONSTRAINT pk_trust_governance PRIMARY KEY (fraud_rule_id)
 # MAGIC )
-# MAGIC COMMENT 'Una fila por regla de fraude: parámetros vigentes, equipo responsable, casos marcados y alertas de gobierno. Data Owner: Trust & Safety.'
+# MAGIC COMMENT 'Una fila por regla de fraude: parámetros vigentes, equipo responsable, casos marcados y alertas de gobierno. Data Owner: Trust & Safety (Rafael Nakamura).'
 # MAGIC TBLPROPERTIES (delta.enableChangeDataFeed = true);
 
 # COMMAND ----------
@@ -261,7 +261,7 @@
 # MAGIC   es_fin_de_semana BOOLEAN NOT NULL COMMENT 'TRUE si es sábado o domingo',
 # MAGIC   CONSTRAINT pk_dim_fecha PRIMARY KEY (fecha_id)
 # MAGIC )
-# MAGIC COMMENT 'Dimensión calendario generada programáticamente para el rango de reseñas y check-ins. Data Owner: CDO (Data Platform).'
+# MAGIC COMMENT 'Dimensión calendario generada programáticamente para el rango de reseñas y check-ins. Data Owner: CDO (Laura Hernández).'
 # MAGIC TBLPROPERTIES (delta.enableChangeDataFeed = true);
 # MAGIC
 # MAGIC CREATE TABLE IF NOT EXISTS workspace.yelp_gold.gld_dim_negocio (
@@ -276,7 +276,7 @@
 # MAGIC   fecha_actualizacion TIMESTAMP              COMMENT 'Timestamp de carga de la dimensión',
 # MAGIC   CONSTRAINT pk_dim_negocio PRIMARY KEY (business_id)
 # MAGIC )
-# MAGIC COMMENT 'Dimensión de negocios (SCD tipo 1: se sobrescribe con la última foto de silver). Data Owner: Operaciones Comerciales.'
+# MAGIC COMMENT 'Dimensión de negocios (SCD tipo 1: se sobrescribe con la última foto de silver). Data Owner: Producto (Andrew Collins).'
 # MAGIC TBLPROPERTIES (delta.enableChangeDataFeed = true);
 # MAGIC
 # MAGIC CREATE TABLE IF NOT EXISTS workspace.yelp_gold.gld_dim_usuario (
@@ -291,7 +291,7 @@
 # MAGIC   fecha_actualizacion TIMESTAMP          COMMENT 'Timestamp de carga de la dimensión',
 # MAGIC   CONSTRAINT pk_dim_usuario PRIMARY KEY (user_id)
 # MAGIC )
-# MAGIC COMMENT 'Dimensión de usuarios sin datos personales directos (SCD tipo 1). Data Owner: Marketing.'
+# MAGIC COMMENT 'Dimensión de usuarios sin datos personales directos (SCD tipo 1). Data Owner: Producto (Andrew Collins).'
 # MAGIC TBLPROPERTIES (delta.enableChangeDataFeed = true);
 
 # COMMAND ----------
@@ -314,7 +314,7 @@
 # MAGIC   CONSTRAINT fk_fact_resena_negocio FOREIGN KEY (business_id) REFERENCES workspace.yelp_gold.gld_dim_negocio (business_id),
 # MAGIC   CONSTRAINT fk_fact_resena_usuario FOREIGN KEY (user_id) REFERENCES workspace.yelp_gold.gld_dim_usuario (user_id)
 # MAGIC )
-# MAGIC COMMENT 'Hecho de reseñas, grano 1 fila por reseña. Data Owner: Trust & Safety.'
+# MAGIC COMMENT 'Hecho de reseñas, grano 1 fila por reseña. Data Owner: Trust & Safety (Rafael Nakamura).'
 # MAGIC TBLPROPERTIES (delta.enableChangeDataFeed = true);
 # MAGIC
 # MAGIC CREATE TABLE IF NOT EXISTS workspace.yelp_gold.gld_fact_checkin_diario (
@@ -325,7 +325,7 @@
 # MAGIC   CONSTRAINT fk_fact_checkin_negocio FOREIGN KEY (business_id) REFERENCES workspace.yelp_gold.gld_dim_negocio (business_id),
 # MAGIC   CONSTRAINT fk_fact_checkin_fecha FOREIGN KEY (fecha_id) REFERENCES workspace.yelp_gold.gld_dim_fecha (fecha_id)
 # MAGIC )
-# MAGIC COMMENT 'Hecho de check-ins agregado por negocio y día: conteo oficial para Operaciones Comerciales. Data Owner: Operaciones Comerciales.'
+# MAGIC COMMENT 'Hecho de check-ins agregado por negocio y día: conteo oficial para Operaciones Comerciales. Data Owner: Producto (Andrew Collins).'
 # MAGIC TBLPROPERTIES (delta.enableChangeDataFeed = true);
 # MAGIC
 # MAGIC ALTER TABLE workspace.yelp_gold.gld_fact_resena DROP CONSTRAINT IF EXISTS chk_fact_calificacion;

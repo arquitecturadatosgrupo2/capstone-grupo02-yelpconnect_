@@ -46,10 +46,16 @@ display(borrador)
 
 # COMMAND ----------
 
+# DBTITLE 1,Dependencia para leer Excel en serverless
+# MAGIC %pip install openpyxl --quiet
+
+# COMMAND ----------
+
 # DBTITLE 1,Paso 2 — Carga del Excel institucional completado → tabla Delta
 import pandas as pd
 
-RUTA = "/Volumes/workspace/yelp_gov/artefactos/Diccionario_de_Datos_YelpConnect.xlsx"
+TABLA = "workspace.yelp_gov.diccionario_datos"
+RUTA = "/Volumes/workspace/yelp_gov/artefactos/Diccionario_de_Datos_YelpConnect.xlsx"   # versionado en E4_diccionario_glosario/artefactos/
 
 COLUMNAS = ["elemento", "nombre_negocio", "descripcion_negocio", "dominio", "sistema_fuente",
             "nombre_fisico", "tipo_dato", "formato", "longitud", "valores_permitidos",
@@ -63,12 +69,11 @@ pdf = pdf.dropna(how="all").iloc[:, :25]
 pdf.columns = COLUMNAS
 pdf = pdf.astype({c: "string" for c in COLUMNAS[:-1]})
 pdf["fecha_actualizacion"] = pd.to_datetime(pdf["fecha_actualizacion"]).dt.date
+pdf = pdf.astype(object).where(pdf.notna(), None)
 
-(spark.createDataFrame(pdf)
-      .write.mode("overwrite").option("overwriteSchema", "true")
-      .saveAsTable("workspace.yelp_gov.diccionario_datos"))
-
-display(spark.table("workspace.yelp_gov.diccionario_datos"))
+# insertInto sobre la tabla creada en 00_setup: conserva los COMMENT de las columnas
+spark.createDataFrame(pdf, schema=spark.table(TABLA).schema).write.insertInto(TABLA, overwrite=True)
+display(spark.table(TABLA))
 
 # COMMAND ----------
 
@@ -97,8 +102,17 @@ faltantes = spark.sql("""
     AND concat_ws('.', 'workspace', table_schema, table_name, column_name)
         NOT IN (SELECT nombre_fisico FROM workspace.yelp_gov.diccionario_datos)
 """)
-print(f"Columnas físicas sin entrada en el diccionario: {faltantes.count()}")
+n_faltantes = faltantes.count()
 display(faltantes)
+assert n_faltantes == 0, f"❌ {n_faltantes} columnas físicas sin entrada en el diccionario (el DoD exige 100 %)"
+
+sobrantes = spark.sql("""
+  SELECT nombre_fisico FROM workspace.yelp_gov.diccionario_datos
+  WHERE nombre_fisico NOT IN (SELECT concat_ws('.', 'workspace', table_schema, table_name, column_name)
+                              FROM workspace.information_schema.columns)
+""").count()
+assert sobrantes == 0, f"❌ {sobrantes} entradas del diccionario no existen en Unity Catalog (nombre físico desactualizado)"
+print("✔ Cobertura 100 % y todos los nombres físicos coinciden con Unity Catalog")
 
 # COMMAND ----------
 
@@ -119,9 +133,10 @@ huerfanas = citadas.join(existentes, "regla_id", "left_anti")
 assert sin_dueno == 0, f"❌ {sin_dueno} elementos sin Data Owner"
 assert sin_clase == 0, f"❌ {sin_clase} elementos sin clasificación de sensibilidad"
 assert sin_reten == 0, f"❌ {sin_reten} elementos sin política de retención"
-print(f"✔ Diccionario íntegro · reglas DQ citadas: {citadas.count()} · "
-      f"sin correspondencia en E5: {huerfanas.count()}")
+n_huerfanas = huerfanas.count()
 display(huerfanas)
+assert n_huerfanas == 0, f"❌ {n_huerfanas} reglas citadas en el diccionario no existen en yelp_gov.dq_reglas"
+print(f"✔ Diccionario íntegro · reglas DQ citadas: {citadas.count()} · todas existen en E5")
 
 # COMMAND ----------
 
@@ -129,7 +144,8 @@ display(huerfanas)
 # El diccionario deja de ser documentación y se convierte en control: la columna
 # "Sensibilidad / Clasificación" se propaga como tag, y E6 la usa para los permisos.
 for fila in spark.sql("""
-    SELECT nombre_fisico, lower(split(sensibilidad, ' ')[0]) AS clase
+    SELECT nombre_fisico,
+           translate(lower(split(sensibilidad, ' ')[0]), 'áéíóú', 'aeiou') AS clase   -- sin tildes: E6 lo compara en SQL
     FROM workspace.yelp_gov.diccionario_datos
     WHERE sensibilidad IS NOT NULL AND nombre_fisico LIKE 'workspace.yelp_%'
 """).collect():
@@ -146,11 +162,22 @@ print("Tags de clasificación aplicados ✔ (insumo directo de E6)")
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ### Decisiones de implementación
+# MAGIC - El Excel se generó en dos partes, como propone este notebook: la metadata técnica (nombre físico, tipo,
+# MAGIC   nulidad, descripción) se tomó de Unity Catalog; las claves y CHECK del DDL de E3; las reglas DQ del catálogo de
+# MAGIC   E5; y las transformaciones del mapeo bronze → silver → gold. Dueño, retención, sensibilidad y normativa se
+# MAGIC   definieron por tabla y por columna según la política de clasificación del Libro de Gobierno.
+# MAGIC - **Clasificación:** Público = lo que ya se ve en la ficha pública (nombre y rating del negocio, calificación y
+# MAGIC   votos); Confidencial = datos personales (nombre de usuario, amigos, textos libres, responsable de equipo) y
+# MAGIC   decisiones de riesgo sobre personas (score y clasificación); Restringido = la lógica antifraude (umbrales,
+# MAGIC   puntos y descripción de las reglas); Interno = el resto.
+# MAGIC - La hoja «Diccionario resumido» se genera de la hoja completa (mismas filas), así que son coherentes.
+# MAGIC
 # MAGIC ### Definition of Done (E4.2)
-# MAGIC - [ ] 100 % de las columnas de `yelp_silver` y `yelp_gold` presentes en el diccionario.
-# MAGIC - [ ] Todo elemento con responsable, clasificación de sensibilidad y política de retención.
-# MAGIC - [ ] Toda regla citada como `DQ-nnn` existe en `yelp_gov.dq_reglas` (sin huérfanas).
-# MAGIC - [ ] Los `nombre_fisico` coinciden exactamente con Unity Catalog (validador 1 en 100 %).
+# MAGIC - [x] 100 % de las columnas de `yelp_silver` y `yelp_gold` presentes en el diccionario (152 columnas).
+# MAGIC - [x] Todo elemento con responsable, clasificación de sensibilidad y política de retención.
+# MAGIC - [x] Toda regla citada como `DQ-nnn` existe en `yelp_gov.dq_reglas` (sin huérfanas).
+# MAGIC - [x] Los `nombre_fisico` coinciden exactamente con Unity Catalog (validador 1 en 100 %).
 # MAGIC - [ ] Tags de clasificación aplicados y visibles en el catálogo.
-# MAGIC - [ ] Hoja "Diccionario resumido" coherente con la hoja completa (es la de la sustentación).
+# MAGIC - [x] Hoja "Diccionario resumido" coherente con la hoja completa (es la de la sustentación).
 # MAGIC - [ ] Párrafo de reflexión: ¿qué se hereda del catálogo y qué debe negociarse con el negocio?

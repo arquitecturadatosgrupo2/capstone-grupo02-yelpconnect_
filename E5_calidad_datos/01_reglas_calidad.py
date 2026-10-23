@@ -21,7 +21,7 @@
 from pyspark.sql import Row
 
 S = "workspace.yelp_silver"
-TS, OC, MK = "Trust & Safety (Rafael Nakamura)", "Operaciones Comerciales (Carla Romero)", "Marketing & Growth (Jessica Martinez)"
+TS, PR = "Trust & Safety (Rafael Nakamura)", "Producto (Andrew Collins)"
 DETENER = "Detener el pipeline: gold no se publica y se alerta al steward"
 REPORTAR = "Reportar al steward en el scorecard; no detiene el pipeline"
 
@@ -79,50 +79,50 @@ reglas = [
           "Cada negocio aparece una sola vez",
           "t.business_id IS NOT NULL", "alta", 100,
           "Es la entidad maestra del golden record: un duplicado duplicaría reseñas y check-ins en todos los reportes.",
-          DETENER, OC),
+          DETENER, PR),
     regla("DQ-010", "slv_business", "categorias", "completitud",
           "Todo negocio declara al menos una categoría",
           "t.categorias IS NOT NULL AND size(t.categorias) > 0", "media", 99,
           "Hoy 9 de 14.577 negocios llegan sin categoría desde Yelp; quedan fuera solo de los cortes por categoría. Bajo 99 % esos cortes dejarían de ser representativos.",
-          REPORTAR, OC),
+          REPORTAR, PR),
     # ---------- Usuario ----------
     regla("DQ-011", "slv_user", "promedio_estrellas", "validez",
           "El promedio de estrellas otorgadas por un usuario está entre 1 y 5",
           "t.promedio_estrellas BETWEEN 1 AND 5", "alta", 100,
           "Valor imposible fuera de rango; alimenta el perfil de riesgo de usuarios. La carga ya lo impide con un CHECK.",
-          DETENER, MK),
+          DETENER, PR),
     regla("DQ-012", "slv_user", "nombre", "completitud",
           "Todo usuario tiene un nombre visible",
           "t.nombre IS NOT NULL AND trim(t.nombre) <> ''", "media", 99.9,
           "Trust & Safety identifica al usuario por su nombre al revisar casos; un 0,1 % sin nombre se revisa por id.",
-          REPORTAR, MK),
+          REPORTAR, PR),
     regla("DQ-013", "slv_user", "n_resenas", "consistencia",
           "El total de reseñas de un perfil no es menor que las reseñas suyas presentes en la muestra",
           f"t.n_resenas >= (SELECT count(*) FROM {S}.slv_review r WHERE r.user_id = t.user_id)", "media", 99.5,
           "Perfiles y reseñas se extraen en momentos distintos, así que hay un desfase esperable (~0,2 %). Más de 0,5 % indicaría perfiles desactualizados.",
-          REPORTAR, MK),
+          REPORTAR, PR),
     # ---------- Tip ----------
     regla("DQ-014", "slv_tip", "business_id", "integridad",
           "Todo tip corresponde a un negocio que existe en el catálogo",
           f"t.business_id IN (SELECT business_id FROM {S}.slv_business)", "alta", 99.5,
           "Mismo criterio que las reseñas (DQ-003): el 0,5 % cubre el desfase entre extracciones.",
-          DETENER, MK),
+          DETENER, TS),
     regla("DQ-015", "slv_tip", "user_id", "integridad",
           "El autor de cada tip existe en el registro de usuarios",
           f"t.user_id IN (SELECT user_id FROM {S}.slv_user)", "media", 70,
           "El muestreo elige usuarios solo entre autores de reseñas, así que ~26 % de los tips tienen autor fuera de la muestra. Riesgo aceptado; bajo 70 % indicaría un cambio en la muestra.",
-          REPORTAR, MK),
+          REPORTAR, TS),
     # ---------- Check-in ----------
     regla("DQ-016", "slv_checkin", "checkin_id", "unicidad",
           "Cada check-in se cuenta una sola vez",
           "t.checkin_id IS NOT NULL", "alta", 100,
           "Es el conteo oficial de check-ins que pidió Operaciones Comerciales: un duplicado reabre la inconsistencia que el proyecto resuelve.",
-          DETENER, OC),
+          DETENER, PR),
     regla("DQ-017", "slv_checkin", "business_id", "integridad",
           "Todo check-in corresponde a un negocio que existe en el catálogo",
           f"t.business_id IN (SELECT business_id FROM {S}.slv_business)", "alta", 99.5,
           "Mismo criterio que DQ-003: el 0,5 % cubre el desfase entre extracciones.",
-          DETENER, OC),
+          DETENER, PR),
     # ---------- Trust & Safety ----------
     regla("DQ-018", "slv_fraud_rule", "team_id", "completitud",
           "Toda regla de fraude activa tiene un equipo responsable",
