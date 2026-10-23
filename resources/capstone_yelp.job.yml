@@ -41,7 +41,16 @@ resources:
             source: WORKSPACE
           timeout_seconds: 0
 
+        - task_key: BRONZE_simulados
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_simulados_raw_to_bronze.py
+            source: WORKSPACE
+          timeout_seconds: 0
+
         - task_key: SILVER_fraud_rule
+          depends_on:
+            - task_key: BRONZE_simulados
           run_if: ALL_SUCCESS
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_fraud_rule_bronze_to_silver.py
@@ -49,6 +58,8 @@ resources:
           timeout_seconds: 0
 
         - task_key: SILVER_trust_safety_area
+          depends_on:
+            - task_key: BRONZE_simulados
           run_if: ALL_SUCCESS
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_trust_safety_area_bronze_to_silver.py

@@ -1,0 +1,11 @@
+fraud_rule_id,fraud_description,risk_level,rule_status
+1,Usuario publica 5 o más reseñas en un mismo día,Alto,Activa
+2,Usuario con desviación estándar 0 en sus calificaciones y 10 o más reseñas,alto,activa
+3,Más del 90 % de las calificaciones del usuario son de 1 o 5 estrellas,Medio,Activa
+4,Cuenta con menos de 30 días de antigüedad que publica reseñas extremas,medio,Activa
+5,Negocio recibe en un día más del triple de su promedio diario de reseñas,ALTO,Activa
+6,Negocio con muchas más reseñas que check-ins en la misma ventana,Medio,activa
+7,Usuario sin amigos ni fans con alto volumen de reseñas,bajo,Activa
+8,Reseñas con texto idéntico publicadas por usuarios distintos,Alto,Inactiva
+9,Ráfaga de calificaciones de 1 estrella hacia un mismo negocio en 24 horas,Alto,Activa
+10,Usuario que solo reseña negocios de una misma cadena,Bajo,INACTIVA
