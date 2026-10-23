@@ -11,7 +11,7 @@
 
 # COMMAND ----------
 
-# DBTITLE 1: Ejemplo resuelto — slv_business
+# DBTITLE 1,Ejemplo resuelto — slv_business
 from pyspark.sql import functions as F
 
 brz = spark.table("workspace.yelp_bronze.brz_business")
@@ -38,7 +38,7 @@ print(f"✔ slv_business: {slv_business.count():,} filas")
 
 # COMMAND ----------
 
-# DBTITLE 1: ✏️ TODO — slv_review (deduplicación explícita + FK válidas)
+# DBTITLE 1,✏️ TODO — slv_review (deduplicación explícita + FK válidas)
 # Requisitos mínimos:
 #  - dropDuplicates por review_id Y detección de duplicados "lógicos"
 #    (mismo user + business + texto): decidir y documentar el criterio.
@@ -48,14 +48,14 @@ print(f"✔ slv_business: {slv_business.count():,} filas")
 
 # COMMAND ----------
 
-# DBTITLE 1: ✏️ TODO — slv_user, slv_tip, slv_checkin
+# DBTITLE 1,✏️ TODO — slv_user, slv_tip, slv_checkin
 # slv_checkin: el campo 'date' llega como STRING con fechas separadas por coma.
 #  → explotar a grano evento (1 fila = 1 check-in) usando split + explode.
 #  Esto resuelve el dolor de Ops Comerciales: un único conteo oficial de check-ins.
 
 # COMMAND ----------
 
-# DBTITLE 1: Gate de calidad — el pipeline falla si la calidad crítica no pasa
+# DBTITLE 1,Gate de calidad — el pipeline falla si la calidad crítica no pasa
 # Ejecuta el motor de E5 y corta el pipeline si una regla de criticidad alta falla.
 resultado = dbutils.notebook.run("../E5_calidad_datos/reglas_calidad", 600)
 

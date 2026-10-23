@@ -17,7 +17,7 @@
 
 # COMMAND ----------
 
-# DBTITLE 1: Parámetros
+# DBTITLE 1,Parámetros
 from pyspark.sql import functions as F
 
 SLV = "workspace.yelp_silver"
@@ -38,7 +38,7 @@ checkins = spark.table(f"{SLV}.slv_checkin")
 
 # COMMAND ----------
 
-# DBTITLE 1: gld_dim_fecha — generada programáticamente (sequence + explode)
+# DBTITLE 1,gld_dim_fecha — generada programáticamente (sequence + explode)
 rango = (resenas.select(F.to_date("fecha_publicacion").alias("f"))
     .union(checkins.select(F.to_date("fecha_checkin").alias("f")))
     .agg(F.min("f").alias("desde"), F.max("f").alias("hasta"))
@@ -69,7 +69,7 @@ cargar(dim_fecha, "gld_dim_fecha")
 
 # COMMAND ----------
 
-# DBTITLE 1: gld_dim_negocio y gld_dim_usuario (SCD tipo 1)
+# DBTITLE 1,gld_dim_negocio y gld_dim_usuario (SCD tipo 1)
 dim_negocio = spark.table(f"{SLV}.slv_business").select(
     "business_id", "nombre", "ciudad", "estado", "categorias",
     F.element_at("categorias", 1).alias("categoria_principal"),
@@ -110,7 +110,7 @@ cargar(dim_usuario, "gld_dim_usuario")
 
 # COMMAND ----------
 
-# DBTITLE 1: gld_fact_resena y gld_fact_checkin_diario
+# DBTITLE 1,gld_fact_resena y gld_fact_checkin_diario
 fact_resena = resenas.select(
     "review_id",
     fecha_id(F.col("fecha_publicacion")).alias("fecha_id"),
@@ -131,7 +131,7 @@ cargar(fact_checkin, "gld_fact_checkin_diario")
 
 # COMMAND ----------
 
-# DBTITLE 1: Validación automática — PK únicas e integridad referencial hechos → dimensiones
+# DBTITLE 1,Validación automática — PK únicas e integridad referencial hechos → dimensiones
 def pk_unica(tabla, *pk):
     r = spark.table(f"{GLD}.{tabla}").agg(F.count("*").alias("n"), F.countDistinct(*pk).alias("d")).first()
     assert r.n > 0, f"❌ {tabla} quedó vacía"

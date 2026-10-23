@@ -2,16 +2,39 @@ resources:
   jobs:
     capstone_yelp:
       name: Capstone_YELP
+      description: Pipeline bronze → silver → gold del Capstone YelpConnect (Grupo 02). Ver E7_pipeline_lakehouse/04_job_orquestacion.
       queue:
         enabled: true
-      performance_target: PERFORMANCE_OPTIMIZED
+      # Corre una vez al día con la muestra; en el target dev el bundle deja el schedule en pausa
+      schedule:
+        quartz_cron_expression: "0 0 6 * * ?"
+        timezone_id: America/Lima
+      # Tope de la corrida completa: protege la cuota diaria de Free Edition
+      timeout_seconds: 7200
+      email_notifications:
+        on_failure:
+          - ${workspace.current_user.userName}
+        no_alert_for_skipped_runs: true
       tasks:
         - task_key: BRONZE_yelp
           run_if: ALL_SUCCESS
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/01_bronze_ingesta.py
             source: WORKSPACE
-          timeout_seconds: 0
+          timeout_seconds: 1800
+          max_retries: 1
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
+
+        - task_key: BRONZE_simulados
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_simulados_raw_to_bronze.py
+            source: WORKSPACE
+          timeout_seconds: 600
+          max_retries: 1
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
 
         - task_key: SILVER_business
           depends_on:
@@ -20,25 +43,22 @@ resources:
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_business_bronze_to_silver.py
             source: WORKSPACE
-          timeout_seconds: 0
+          timeout_seconds: 900
+          max_retries: 1
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
 
-        - task_key: SILVER_checkin
+        - task_key: SILVER_user
           depends_on:
             - task_key: BRONZE_yelp
           run_if: ALL_SUCCESS
           notebook_task:
-            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_checkin_bronze_to_silver.py
+            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_user_bronze_to_silver.py
             source: WORKSPACE
-          timeout_seconds: 0
-
-        - task_key: SILVER_tip
-          depends_on:
-            - task_key: BRONZE_yelp
-          run_if: ALL_SUCCESS
-          notebook_task:
-            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_tip_bronze_to_silver.py
-            source: WORKSPACE
-          timeout_seconds: 0
+          timeout_seconds: 900
+          max_retries: 1
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
 
         - task_key: SILVER_review
           depends_on:
@@ -49,32 +69,34 @@ resources:
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_review_bronze_to_silver.py
             source: WORKSPACE
-          timeout_seconds: 0
+          timeout_seconds: 1800
+          max_retries: 1
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
 
-        - task_key: SILVER_user
+        - task_key: SILVER_tip
           depends_on:
             - task_key: BRONZE_yelp
           run_if: ALL_SUCCESS
           notebook_task:
-            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_user_bronze_to_silver.py
+            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_tip_bronze_to_silver.py
             source: WORKSPACE
-          timeout_seconds: 0
+          timeout_seconds: 900
+          max_retries: 1
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
 
-        - task_key: BRONZE_simulados
-          run_if: ALL_SUCCESS
-          notebook_task:
-            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_simulados_raw_to_bronze.py
-            source: WORKSPACE
-          timeout_seconds: 0
-
-        - task_key: SILVER_fraud_rule
+        - task_key: SILVER_checkin
           depends_on:
-            - task_key: SILVER_trust_safety_area
+            - task_key: BRONZE_yelp
           run_if: ALL_SUCCESS
           notebook_task:
-            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_fraud_rule_bronze_to_silver.py
+            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_checkin_bronze_to_silver.py
             source: WORKSPACE
-          timeout_seconds: 0
+          timeout_seconds: 1200
+          max_retries: 1
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
 
         - task_key: SILVER_trust_safety_area
           depends_on:
@@ -83,7 +105,22 @@ resources:
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_trust_safety_area_bronze_to_silver.py
             source: WORKSPACE
-          timeout_seconds: 0
+          timeout_seconds: 600
+          max_retries: 1
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
+
+        - task_key: SILVER_fraud_rule
+          depends_on:
+            - task_key: SILVER_trust_safety_area
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_fraud_rule_bronze_to_silver.py
+            source: WORKSPACE
+          timeout_seconds: 600
+          max_retries: 1
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
 
         - task_key: GOLD_user_fraud_profile
           depends_on:
@@ -94,7 +131,10 @@ resources:
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_gold_user_fraud_profile.py
             source: WORKSPACE
-          timeout_seconds: 0
+          timeout_seconds: 1200
+          max_retries: 1
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
 
         - task_key: GOLD_business_anomaly_bursts
           depends_on:
@@ -105,7 +145,10 @@ resources:
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_gold_business_anomaly_bursts.py
             source: WORKSPACE
-          timeout_seconds: 0
+          timeout_seconds: 1200
+          max_retries: 1
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
 
         - task_key: GOLD_modelo_dimensional
           depends_on:
@@ -117,7 +160,10 @@ resources:
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_gold_modelo_dimensional.py
             source: WORKSPACE
-          timeout_seconds: 0
+          timeout_seconds: 1800
+          max_retries: 1
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
 
         - task_key: GOLD_trust_governance
           depends_on:
@@ -127,4 +173,20 @@ resources:
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_gold_trust_governance.py
             source: WORKSPACE
-          timeout_seconds: 0
+          timeout_seconds: 600
+          max_retries: 1
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
+
+        - task_key: MONITOREO_bitacora
+          depends_on:
+            - task_key: SILVER_tip
+            - task_key: GOLD_modelo_dimensional
+            - task_key: GOLD_trust_governance
+          run_if: ALL_DONE
+          notebook_task:
+            notebook_path: ../E7_pipeline_lakehouse/04_job_orquestacion.py
+            source: WORKSPACE
+            base_parameters:
+              job_run_id: "{{job.run_id}}"
+          timeout_seconds: 600

@@ -17,7 +17,7 @@
 
 # COMMAND ----------
 
-# DBTITLE 1: Parámetros
+# DBTITLE 1,Parámetros
 from pyspark.sql import functions as F
 
 SLV = "workspace.yelp_silver"
@@ -25,7 +25,7 @@ DESTINO = "workspace.yelp_gold.gld_user_fraud_profile"
 
 # COMMAND ----------
 
-# DBTITLE 1: Señales de comportamiento por usuario
+# DBTITLE 1,Señales de comportamiento por usuario
 resenas = spark.table(f"{SLV}.slv_review")
 usuarios = spark.table(f"{SLV}.slv_user")
 
@@ -66,7 +66,7 @@ senales = (usuarios
 
 # COMMAND ----------
 
-# DBTITLE 1: Score de riesgo — reglas y parámetros del catálogo slv_fraud_rule
+# DBTITLE 1,Score de riesgo — reglas y parámetros del catálogo slv_fraud_rule
 # El código define la FORMA de cada regla; umbral, mínimo de reseñas, puntos y estado vienen del catálogo.
 # Si Trust & Safety cambia un parámetro o desactiva una regla, el score cambia sin tocar este notebook.
 CONDICIONES = {
@@ -105,7 +105,7 @@ gld = (senales
 
 # COMMAND ----------
 
-# DBTITLE 1: Escritura sobre la tabla del DDL de E3 (conserva COMMENT y constraints)
+# DBTITLE 1,Escritura sobre la tabla del DDL de E3 (conserva COMMENT y constraints)
 assert spark.catalog.tableExists(DESTINO), f"❌ {DESTINO} no existe: ejecutar primero E3_modelo_fisico/01_modelo_fisico_ddl"
 
 gld.select(*spark.table(DESTINO).columns).write.insertInto(DESTINO, overwrite=True)
@@ -113,7 +113,7 @@ print(f"✔ {DESTINO} cargada")
 
 # COMMAND ----------
 
-# DBTITLE 1: Validación automática
+# DBTITLE 1,Validación automática
 df = spark.table(DESTINO)
 r = df.agg(
     F.count("*").alias("filas"),

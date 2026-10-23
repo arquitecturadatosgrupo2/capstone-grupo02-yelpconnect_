@@ -15,7 +15,7 @@
 
 # COMMAND ----------
 
-# DBTITLE 1: Parámetros
+# DBTITLE 1,Parámetros
 from pyspark.sql import functions as F
 
 SEMILLAS = "/Volumes/workspace/yelp_bronze/raw/semillas"
@@ -29,7 +29,7 @@ FUENTES = {
 
 # COMMAND ----------
 
-# DBTITLE 1: Carga batch full de las semillas
+# DBTITLE 1,Carga batch full de las semillas
 for archivo, (tabla, comentario) in FUENTES.items():
     (spark.read
         .option("header", True)
@@ -45,7 +45,7 @@ for archivo, (tabla, comentario) in FUENTES.items():
 
 # COMMAND ----------
 
-# DBTITLE 1: Validación automática
+# DBTITLE 1,Validación automática
 for archivo, (tabla, _) in FUENTES.items():
     r = spark.table(tabla).agg(
         F.count("*").alias("filas"),

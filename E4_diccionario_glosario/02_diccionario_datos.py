@@ -18,7 +18,7 @@
 
 # COMMAND ----------
 
-# DBTITLE 1: Paso 1 — Borrador técnico autogenerado desde Unity Catalog
+# DBTITLE 1,Paso 1 — Borrador técnico autogenerado desde Unity Catalog
 borrador = spark.sql("""
   SELECT
     c.column_name                                                    AS elemento,
@@ -46,7 +46,7 @@ display(borrador)
 
 # COMMAND ----------
 
-# DBTITLE 1: Paso 2 — Carga del Excel institucional completado → tabla Delta
+# DBTITLE 1,Paso 2 — Carga del Excel institucional completado → tabla Delta
 import pandas as pd
 
 RUTA = "/Volumes/workspace/yelp_gov/artefactos/Diccionario_de_Datos_YelpConnect.xlsx"
@@ -72,7 +72,7 @@ display(spark.table("workspace.yelp_gov.diccionario_datos"))
 
 # COMMAND ----------
 
-# DBTITLE 1: Validador 1 — Cobertura de documentación (columna física ↔ diccionario)
+# DBTITLE 1,Validador 1 — Cobertura de documentación (columna física ↔ diccionario)
 cobertura = spark.sql("""
   WITH fisicas AS (
     SELECT concat_ws('.', 'workspace', table_schema, table_name, column_name) AS nombre_fisico,
@@ -102,7 +102,7 @@ display(faltantes)
 
 # COMMAND ----------
 
-# DBTITLE 1: Validador 2 — Trazabilidad con el glosario (E4.1) y las reglas DQ (E5)
+# DBTITLE 1,Validador 2 — Trazabilidad con el glosario (E4.1) y las reglas DQ (E5)
 from pyspark.sql import functions as F
 
 d = spark.table("workspace.yelp_gov.diccionario_datos")
@@ -125,7 +125,7 @@ display(huerfanas)
 
 # COMMAND ----------
 
-# DBTITLE 1: Aplicar la clasificación del diccionario como tags reales en Unity Catalog
+# DBTITLE 1,Aplicar la clasificación del diccionario como tags reales en Unity Catalog
 # El diccionario deja de ser documentación y se convierte en control: la columna
 # "Sensibilidad / Clasificación" se propaga como tag, y E6 la usa para los permisos.
 for fila in spark.sql("""
