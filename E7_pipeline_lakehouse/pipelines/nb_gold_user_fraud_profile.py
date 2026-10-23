@@ -8,7 +8,7 @@
 # MAGIC | `gld_user_fraud_profile` | Trust & Safety (Rafael Nakamura) | ¿Qué usuarios se comportan como bots o granjas de reseñas y con qué nivel de riesgo? |
 # MAGIC
 # MAGIC Un registro por usuario con señales de comportamiento calculadas sobre sus reseñas y un **score de riesgo**
-# MAGIC que aplica las reglas activas del catálogo `slv_fraud_rule`. Lógica según el mapeo silver → gold del grupo
+# MAGIC que aplica las reglas activas del catálogo `slv_fraud_rule` con los parámetros que ese catálogo define. Lógica según el mapeo silver → gold del grupo
 # MAGIC (`mapeo_equipo_02_utec.xlsx`).
 # MAGIC
 # MAGIC > **Trazabilidad —** este entregable **implementa** la sección «Requerimientos de información y KPIs» del
@@ -66,25 +66,36 @@ senales = (usuarios
 
 # COMMAND ----------
 
-# DBTITLE 1: Score de riesgo — reglas del catálogo slv_fraud_rule
-# Cada regla suma puntos; el máximo es 100. Ids = fraud_rule_id del catálogo de Trust & Safety.
-REGLAS = [
-    # (fraud_rule_id, puntos, condición)
-    (1, 30, F.col("max_resenas_en_un_dia") >= 5),
-    (2, 25, (F.col("desviacion_estandar_estrellas") == 0) & (F.col("total_resenas") >= 10)),
-    (3, 20, (F.col("porcentaje_calificaciones_extremas") > 90) & (F.col("total_resenas") >= 5)),
-    (7, 15, (F.col("amigos_count") == 0) & (F.col("fans_count") == 0) & (F.col("total_resenas") >= 10)),
-    (4, 10, F.col("antiguedad_dias") < 30),
-]
-activas = {r.fraud_rule_id for r in spark.table(f"{SLV}.slv_fraud_rule").filter("rule_status = 'activa'").collect()}
+# DBTITLE 1: Score de riesgo — reglas y parámetros del catálogo slv_fraud_rule
+# El código define la FORMA de cada regla; umbral, mínimo de reseñas, puntos y estado vienen del catálogo.
+# Si Trust & Safety cambia un parámetro o desactiva una regla, el score cambia sin tocar este notebook.
+CONDICIONES = {
+    # fraud_rule_id: (parámetros obligatorios, condición en función de la fila del catálogo)
+    1: ({"umbral"}, lambda r: F.col("max_resenas_en_un_dia") >= r.umbral),
+    2: ({"umbral"}, lambda r: F.col("desviacion_estandar_estrellas") <= r.umbral),
+    3: ({"umbral"}, lambda r: F.col("porcentaje_calificaciones_extremas") > r.umbral),
+    4: ({"umbral"}, lambda r: F.col("antiguedad_dias") < r.umbral),
+    7: (set(),      lambda r: (F.col("amigos_count") == 0) & (F.col("fans_count") == 0)),
+}
 
-score = F.lit(0)
-for rule_id, puntos, cond in REGLAS:
-    if rule_id in activas:          # una regla inactivada por Trust & Safety deja de puntuar sin tocar el código
-        score = score + F.when(cond, puntos).otherwise(0)
+catalogo = spark.table(f"{SLV}.slv_fraud_rule").filter("entidad = 'usuario' AND rule_status = 'activa'").collect()
+
+sin_logica = sorted(r.fraud_rule_id for r in catalogo if r.fraud_rule_id not in CONDICIONES)
+if sin_logica:
+    print(f"⚠️ Reglas de usuario activas sin implementación (no puntúan): {sin_logica}")
+
+score, activadas = F.lit(0), []
+for r in (x for x in catalogo if x.fraud_rule_id in CONDICIONES):
+    requeridos, condicion = CONDICIONES[r.fraud_rule_id]
+    faltan = [p for p in requeridos if getattr(r, p) is None]
+    assert not faltan, f"❌ La regla {r.fraud_rule_id} está activa pero le falta {faltan} en el catálogo"
+    cond = condicion(r) & (F.col("total_resenas") >= (r.min_resenas or 0))
+    score = score + F.when(cond, F.lit(r.puntos or 0)).otherwise(0)
+    activadas.append(F.when(cond, F.lit(r.fraud_rule_id)))
 
 gld = (senales
-    .withColumn("score_riesgo_usuario", score.cast("double"))
+    .withColumn("reglas_activadas", F.array_compact(F.array(*activadas).cast("array<bigint>")))
+    .withColumn("score_riesgo_usuario", F.least(score, F.lit(100)).cast("double"))
     .withColumn("clasificacion_riesgo",
         F.when(F.col("score_riesgo_usuario") >= 50, "Alto")
          .when(F.col("score_riesgo_usuario") >= 25, "Moderado")
@@ -124,8 +135,13 @@ print(f"✔ {DESTINO}: {r.filas:,} usuarios · PK única · distribución de rie
 # MAGIC - `total_resenas`, la desviación, el % de extremas y el pico diario se calculan sobre `slv_review` (la muestra);
 # MAGIC   `promedio_estrellas_otorgadas` viene de `slv_user` (histórico de Yelp), como indica el mapeo.
 # MAGIC - Desviación con `stddev_samp`: es nula con una sola reseña, para no marcar como bot a quien escribió una vez.
-# MAGIC - El score aplica solo las reglas **activas** de `slv_fraud_rule`. Pesos y cortes (Alto ≥ 50, Moderado ≥ 25)
-# MAGIC   son una propuesta del equipo y deben validarse con Trust & Safety y documentarse en el Documento Formal.
+# MAGIC - El score aplica solo las reglas de usuario **activas** de `slv_fraud_rule`, con el umbral, el mínimo de
+# MAGIC   reseñas y los puntos que indica el catálogo; el código define solo la forma de cada regla. Tope de 100.
+# MAGIC - `reglas_activadas` guarda qué reglas se cumplieron en cada usuario: es el linaje regla → caso que consume
+# MAGIC   `gld_trust_governance`.
+# MAGIC - Una regla activa sin implementación se avisa y no puntúa; una regla activa a la que le falta un parámetro
+# MAGIC   obligatorio detiene la carga.
+# MAGIC - Los cortes de clasificación (Alto ≥ 50, Moderado ≥ 25) siguen en el código: validarlos con Trust & Safety.
 # MAGIC - `antiguedad_dias` se mide contra la fecha actual (mapeo); como el dataset es histórico, la regla 4
 # MAGIC   (cuentas de menos de 30 días) prácticamente no se activa. Alternativa a evaluar: medirla a la fecha de la reseña.
 # MAGIC
