@@ -73,12 +73,31 @@
 # MAGIC   cool              BIGINT    NOT NULL COMMENT 'Votos "cool" recibidos',
 # MAGIC   fecha_publicacion TIMESTAMP NOT NULL COMMENT 'Fecha y hora de publicación de la reseña',
 # MAGIC   estado_resena     STRING             COMMENT 'Estado de moderación (pendiente, aprobada, rechazada)',
+# MAGIC   autor_en_muestra  BOOLEAN            COMMENT 'FALSE si el autor no está en slv_user por el recorte de usuarios del muestreo (riesgo aceptado)',
 # MAGIC   fecha_carga       TIMESTAMP NOT NULL COMMENT 'Timestamp de procesamiento del pipeline (auditoría)',
 # MAGIC   CONSTRAINT pk_review PRIMARY KEY (review_id),
 # MAGIC   CONSTRAINT fk_review_business FOREIGN KEY (business_id) REFERENCES workspace.yelp_silver.slv_business (business_id),
 # MAGIC   CONSTRAINT fk_review_user FOREIGN KEY (user_id) REFERENCES workspace.yelp_silver.slv_user (user_id)
 # MAGIC )
-# MAGIC COMMENT 'Reseñas de usuarios sobre negocios — capa conformada. Data Owner: Trust & Safety.'
+# MAGIC COMMENT 'Reseñas de usuarios sobre negocios, sin duplicados lógicos — capa conformada. Data Owner: Trust & Safety.'
+# MAGIC TBLPROPERTIES (delta.enableChangeDataFeed = true);
+# MAGIC
+# MAGIC -- Las reseñas que no pasan las reglas de integridad no se descartan: quedan aquí con su motivo
+# MAGIC CREATE TABLE IF NOT EXISTS workspace.yelp_silver.slv_review_cuarentena (
+# MAGIC   review_id            STRING             COMMENT 'Identificador de la reseña tal como llegó (puede ser nulo)',
+# MAGIC   user_id              STRING             COMMENT 'Usuario autor de la reseña',
+# MAGIC   business_id          STRING             COMMENT 'Negocio reseñado',
+# MAGIC   calificacion         SMALLINT           COMMENT 'Estrellas otorgadas',
+# MAGIC   comentario           STRING             COMMENT 'Texto de la reseña (PII indirecta — revisar E6)',
+# MAGIC   util                 BIGINT             COMMENT 'Votos "útil" recibidos',
+# MAGIC   divertido            BIGINT             COMMENT 'Votos "divertido" recibidos',
+# MAGIC   cool                 BIGINT             COMMENT 'Votos "cool" recibidos',
+# MAGIC   fecha_publicacion    TIMESTAMP          COMMENT 'Fecha y hora de publicación de la reseña',
+# MAGIC   motivo               STRING    NOT NULL COMMENT 'Por qué quedó en cuarentena: review_id_nulo, review_id_duplicado, duplicado_logico, negocio_inexistente',
+# MAGIC   review_id_conservado STRING             COMMENT 'Para duplicados: review_id de la reseña que sí quedó en slv_review',
+# MAGIC   fecha_carga          TIMESTAMP NOT NULL COMMENT 'Timestamp de procesamiento del pipeline (auditoría)'
+# MAGIC )
+# MAGIC COMMENT 'Reseñas apartadas de slv_review por reglas de integridad, con su motivo. Data Owner: Trust & Safety.'
 # MAGIC TBLPROPERTIES (delta.enableChangeDataFeed = true);
 # MAGIC
 # MAGIC -- checkin llega como string de fechas concatenadas: decisión de modelado = grano evento (1 fila = 1 check-in)
@@ -151,6 +170,9 @@
 # MAGIC ALTER TABLE workspace.yelp_silver.slv_user       ADD CONSTRAINT chk_promedio     CHECK (promedio_estrellas BETWEEN 1.0 AND 5.0);
 # MAGIC ALTER TABLE workspace.yelp_silver.slv_review     DROP CONSTRAINT IF EXISTS chk_calificacion;
 # MAGIC ALTER TABLE workspace.yelp_silver.slv_review     ADD CONSTRAINT chk_calificacion CHECK (calificacion BETWEEN 1 AND 5);
+# MAGIC ALTER TABLE workspace.yelp_silver.slv_review_cuarentena DROP CONSTRAINT IF EXISTS chk_motivo;
+# MAGIC ALTER TABLE workspace.yelp_silver.slv_review_cuarentena ADD CONSTRAINT chk_motivo
+# MAGIC   CHECK (motivo IN ('review_id_nulo', 'review_id_duplicado', 'duplicado_logico', 'negocio_inexistente'));
 # MAGIC ALTER TABLE workspace.yelp_silver.slv_fraud_rule DROP CONSTRAINT IF EXISTS chk_risk_level;
 # MAGIC ALTER TABLE workspace.yelp_silver.slv_fraud_rule ADD CONSTRAINT chk_risk_level   CHECK (risk_level IN ('bajo', 'medio', 'alto'));
 # MAGIC ALTER TABLE workspace.yelp_silver.slv_fraud_rule DROP CONSTRAINT IF EXISTS chk_rule_status;
