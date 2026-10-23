@@ -65,3 +65,24 @@ resources:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_trust_safety_area_bronze_to_silver.py
             source: WORKSPACE
           timeout_seconds: 0
+
+        - task_key: GOLD_user_fraud_profile
+          depends_on:
+            - task_key: SILVER_user
+            - task_key: SILVER_review
+            - task_key: SILVER_fraud_rule
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_gold_user_fraud_profile.py
+            source: WORKSPACE
+          timeout_seconds: 0
+
+        - task_key: GOLD_business_anomaly_bursts
+          depends_on:
+            - task_key: SILVER_review
+            - task_key: SILVER_checkin
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_gold_business_anomaly_bursts.py
+            source: WORKSPACE
+          timeout_seconds: 0
