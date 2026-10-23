@@ -103,3 +103,15 @@ resources:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_gold_business_anomaly_bursts.py
             source: WORKSPACE
           timeout_seconds: 0
+
+        - task_key: GOLD_modelo_dimensional
+          depends_on:
+            - task_key: SILVER_business
+            - task_key: SILVER_user
+            - task_key: SILVER_review
+            - task_key: SILVER_checkin
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_gold_modelo_dimensional.py
+            source: WORKSPACE
+          timeout_seconds: 0
