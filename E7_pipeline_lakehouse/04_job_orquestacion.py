@@ -23,8 +23,10 @@
 # MAGIC BRONZE_simulados ─► SILVER_trust_safety_area ─► SILVER_fraud_rule ─► (gold de Trust & Safety)
 # MAGIC ```
 # MAGIC Configuración evaluada:
-# MAGIC - [x] 14 tareas con dependencias (no un solo notebook gigante).
-# MAGIC - [x] Retries: 1 reintento por tarea, 60 s después de la falla, también si la falla es por timeout.
+# MAGIC - [x] 15 tareas con dependencias (no un solo notebook gigante). `DQ_gate` (E5) corre entre silver y gold:
+# MAGIC   si falla una regla crítica, gold no se publica.
+# MAGIC - [x] Retries: 1 reintento por tarea, 60 s después de la falla, también si la falla es por timeout. El gate no
+# MAGIC   se reintenta: con los mismos datos fallaría igual.
 # MAGIC - [x] Timeout por tarea (10 a 30 min según el volumen) y de 2 h para la corrida completa: protege la cuota diaria.
 # MAGIC - [x] Notificación on-failure por correo a quien despliega el bundle (`${workspace.current_user.userName}`).
 # MAGIC - [x] Trigger programado: diario a las 06:00 (America/Lima). Justificación abajo.
@@ -35,8 +37,11 @@
 # MAGIC se dispararía con los propios archivos del pipeline. En el target `dev` del bundle el schedule queda en pausa
 # MAGIC automáticamente, para que el desarrollo no consuma cuota sin que nadie lo pida.
 # MAGIC
-# MAGIC > ✏️ TODO — Insertar captura del grafo del job y de una corrida exitosa + una corrida
-# MAGIC > donde el gate de calidad detuvo el pipeline (forzar una regla para provocarlo).
+# MAGIC **Falla controlada del gate:** correr el job con el parámetro `forzar_falla_gate = true` agrega a E5 la regla de
+# MAGIC prueba DQ-900, que no se puede cumplir. `DQ_gate` falla, las tareas gold quedan en `UPSTREAM_FAILED`, llega la
+# MAGIC alerta y la bitácora registra la corrida.
+# MAGIC
+# MAGIC > ✏️ TODO — Insertar captura del grafo del job y de una corrida exitosa + la corrida de la falla controlada.
 
 # COMMAND ----------
 
@@ -76,6 +81,7 @@ TABLAS = {
     "SILVER_checkin":               ["yelp_silver.slv_checkin"],
     "SILVER_trust_safety_area":     ["yelp_silver.slv_trust_safety_area"],
     "SILVER_fraud_rule":            ["yelp_silver.slv_fraud_rule"],
+    "DQ_gate":                      ["yelp_gov.dq_resultados"],
     "GOLD_user_fraud_profile":      ["yelp_gold.gld_user_fraud_profile"],
     "GOLD_business_anomaly_bursts": ["yelp_gold.gld_business_anomaly_bursts"],
     "GOLD_modelo_dimensional":      ["yelp_gold.gld_dim_fecha", "yelp_gold.gld_dim_negocio", "yelp_gold.gld_dim_usuario",

@@ -97,7 +97,10 @@ CREATE TABLE IF NOT EXISTS {CATALOGO}.yelp_gov.dq_reglas (
   descripcion      STRING  COMMENT 'Regla en lenguaje de negocio',
   expresion_sql    STRING  COMMENT 'Predicado SQL que DEBE cumplirse (ej. stars BETWEEN 1 AND 5)',
   criticidad       STRING  COMMENT 'alta|media|baja',
-  umbral_pct       DOUBLE  COMMENT 'Porcentaje mínimo de filas que deben cumplir la regla (0-100)'
+  umbral_pct       DOUBLE  COMMENT 'Porcentaje mínimo de filas que deben cumplir la regla (0-100)',
+  justificacion_umbral STRING COMMENT 'Por qué ese umbral y qué pasa con las filas que no cumplen',
+  accion_si_falla  STRING  COMMENT 'Decisión cuando la regla no se cumple (detener el pipeline, cuarentena o reportar)',
+  data_owner       STRING  COMMENT 'Área del caso que responde por la regla y acepta el riesgo'
 ) COMMENT 'E5 · Catálogo de reglas de calidad de datos'
 """)
 
