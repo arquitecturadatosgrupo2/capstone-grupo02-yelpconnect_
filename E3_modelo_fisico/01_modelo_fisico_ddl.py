@@ -112,17 +112,6 @@
 
 # MAGIC %sql
 # MAGIC -- ======================= SILVER · Trust & Safety (fuentes simuladas del caso) =======================
-# MAGIC CREATE TABLE IF NOT EXISTS workspace.yelp_silver.slv_fraud_rule (
-# MAGIC   fraud_rule_id     BIGINT    NOT NULL COMMENT 'Identificador único de la regla de fraude',
-# MAGIC   fraud_description STRING    NOT NULL COMMENT 'Descripción de la regla de detección de fraude',
-# MAGIC   risk_level        STRING    NOT NULL COMMENT 'Nivel de riesgo (bajo, medio, alto)',
-# MAGIC   rule_status       STRING    NOT NULL COMMENT 'Estado de la regla (activa, inactiva)',
-# MAGIC   fecha_carga       TIMESTAMP NOT NULL COMMENT 'Timestamp de procesamiento del pipeline (auditoría)',
-# MAGIC   CONSTRAINT pk_fraud_rule PRIMARY KEY (fraud_rule_id)
-# MAGIC )
-# MAGIC COMMENT 'Reglas de detección de fraude — capa conformada. Data Owner: Trust & Safety.'
-# MAGIC TBLPROPERTIES (delta.enableChangeDataFeed = true);
-# MAGIC
 # MAGIC CREATE TABLE IF NOT EXISTS workspace.yelp_silver.slv_trust_safety_area (
 # MAGIC   team_id     BIGINT    NOT NULL COMMENT 'Identificador único del equipo de Trust & Safety',
 # MAGIC   team_name   STRING    NOT NULL COMMENT 'Nombre del equipo',
@@ -132,6 +121,24 @@
 # MAGIC   CONSTRAINT pk_trust_safety PRIMARY KEY (team_id)
 # MAGIC )
 # MAGIC COMMENT 'Equipos de Trust & Safety — capa conformada. Data Owner: Trust & Safety.'
+# MAGIC TBLPROPERTIES (delta.enableChangeDataFeed = true);
+# MAGIC
+# MAGIC -- Catálogo de reglas que gobierna gold: cambiar estado, umbral o puntos aquí cambia el resultado del pipeline
+# MAGIC CREATE TABLE IF NOT EXISTS workspace.yelp_silver.slv_fraud_rule (
+# MAGIC   fraud_rule_id     BIGINT    NOT NULL COMMENT 'Identificador único de la regla de fraude',
+# MAGIC   fraud_description STRING    NOT NULL COMMENT 'Descripción de la regla de detección de fraude',
+# MAGIC   entidad           STRING    NOT NULL COMMENT 'Sobre qué se evalúa la regla (usuario, negocio)',
+# MAGIC   umbral            DOUBLE             COMMENT 'Valor de corte de la regla; su significado depende de la regla (ver descripción)',
+# MAGIC   min_resenas       INT                COMMENT 'Mínimo de reseñas para que la regla aplique (evita falsos positivos con poco volumen)',
+# MAGIC   puntos            INT                COMMENT 'Puntos que suma al score de riesgo del usuario (solo reglas de usuario)',
+# MAGIC   risk_level        STRING    NOT NULL COMMENT 'Nivel de riesgo (bajo, medio, alto)',
+# MAGIC   rule_status       STRING    NOT NULL COMMENT 'Estado de la regla (activa, inactiva); solo las activas se aplican',
+# MAGIC   team_id           BIGINT             COMMENT 'FK al equipo de Trust & Safety responsable de la regla',
+# MAGIC   fecha_carga       TIMESTAMP NOT NULL COMMENT 'Timestamp de procesamiento del pipeline (auditoría)',
+# MAGIC   CONSTRAINT pk_fraud_rule PRIMARY KEY (fraud_rule_id),
+# MAGIC   CONSTRAINT fk_fraud_rule_team FOREIGN KEY (team_id) REFERENCES workspace.yelp_silver.slv_trust_safety_area (team_id)
+# MAGIC )
+# MAGIC COMMENT 'Catálogo de reglas de detección de fraude con sus parámetros y equipo responsable — capa conformada. Data Owner: Trust & Safety.'
 # MAGIC TBLPROPERTIES (delta.enableChangeDataFeed = true);
 
 # COMMAND ----------
@@ -146,6 +153,12 @@
 # MAGIC ALTER TABLE workspace.yelp_silver.slv_review     ADD CONSTRAINT chk_calificacion CHECK (calificacion BETWEEN 1 AND 5);
 # MAGIC ALTER TABLE workspace.yelp_silver.slv_fraud_rule DROP CONSTRAINT IF EXISTS chk_risk_level;
 # MAGIC ALTER TABLE workspace.yelp_silver.slv_fraud_rule ADD CONSTRAINT chk_risk_level   CHECK (risk_level IN ('bajo', 'medio', 'alto'));
+# MAGIC ALTER TABLE workspace.yelp_silver.slv_fraud_rule DROP CONSTRAINT IF EXISTS chk_rule_status;
+# MAGIC ALTER TABLE workspace.yelp_silver.slv_fraud_rule ADD CONSTRAINT chk_rule_status  CHECK (rule_status IN ('activa', 'inactiva'));
+# MAGIC ALTER TABLE workspace.yelp_silver.slv_fraud_rule DROP CONSTRAINT IF EXISTS chk_entidad;
+# MAGIC ALTER TABLE workspace.yelp_silver.slv_fraud_rule ADD CONSTRAINT chk_entidad      CHECK (entidad IN ('usuario', 'negocio'));
+# MAGIC ALTER TABLE workspace.yelp_silver.slv_fraud_rule DROP CONSTRAINT IF EXISTS chk_puntos;
+# MAGIC ALTER TABLE workspace.yelp_silver.slv_fraud_rule ADD CONSTRAINT chk_puntos       CHECK (puntos IS NULL OR puntos BETWEEN 0 AND 100);
 
 # COMMAND ----------
 
@@ -164,7 +177,8 @@
 # MAGIC   amigos_count                       INT       COMMENT 'Cantidad de amigos en su red',
 # MAGIC   fans_count                         BIGINT    COMMENT 'Cantidad de seguidores',
 # MAGIC   antiguedad_dias                    INT       COMMENT 'Días transcurridos desde el registro del usuario',
-# MAGIC   score_riesgo_usuario               DOUBLE    COMMENT 'Puntaje de riesgo calculado (0.0 a 100.0)',
+# MAGIC   reglas_activadas                   ARRAY<BIGINT> COMMENT 'fraud_rule_id de las reglas activas de usuario que se cumplen (linaje regla → caso)',
+# MAGIC   score_riesgo_usuario               DOUBLE    COMMENT 'Suma de puntos de las reglas activadas, tope 100',
 # MAGIC   clasificacion_riesgo               STRING    COMMENT 'Categoría de riesgo: Bajo, Moderado o Alto',
 # MAGIC   fecha_actualizacion                TIMESTAMP COMMENT 'Timestamp de cálculo de la métrica',
 # MAGIC   CONSTRAINT pk_user_fraud PRIMARY KEY (user_id)
@@ -179,7 +193,8 @@
 # MAGIC   promedio_estrellas_ventana DOUBLE    COMMENT 'Calificación promedio obtenida en la ventana',
 # MAGIC   checkins_en_ventana        INT       COMMENT 'Check-ins registrados en la misma ventana',
 # MAGIC   ratio_resenas_checkins     DOUBLE    COMMENT 'Reseñas / check-ins de la ventana (valores muy altos sugieren fraude)',
-# MAGIC   es_rafaga_sospechosa       BOOLEAN   COMMENT 'TRUE si el volumen de la ventana supera el promedio histórico del negocio',
+# MAGIC   reglas_activadas           ARRAY<BIGINT> COMMENT 'fraud_rule_id de las reglas activas de negocio que se cumplen en el día (linaje regla → caso)',
+# MAGIC   es_rafaga_sospechosa       BOOLEAN   COMMENT 'TRUE si al menos una regla activa de negocio se cumple en el día',
 # MAGIC   fecha_actualizacion        TIMESTAMP COMMENT 'Timestamp de procesamiento',
 # MAGIC   CONSTRAINT pk_business_anomaly PRIMARY KEY (business_id, fecha_ventana)
 # MAGIC )
@@ -189,16 +204,22 @@
 # MAGIC CREATE TABLE IF NOT EXISTS workspace.yelp_gold.gld_trust_governance (
 # MAGIC   fraud_rule_id       BIGINT NOT NULL COMMENT 'ID de la regla de fraude',
 # MAGIC   fraud_description   STRING    COMMENT 'Descripción de la regla de detección',
+# MAGIC   entidad             STRING    COMMENT 'Sobre qué se evalúa la regla (usuario, negocio)',
+# MAGIC   umbral              DOUBLE    COMMENT 'Valor de corte vigente de la regla',
+# MAGIC   puntos              INT       COMMENT 'Puntos que suma al score de riesgo (reglas de usuario)',
 # MAGIC   risk_level          STRING    COMMENT 'Nivel de riesgo (bajo, medio, alto)',
 # MAGIC   rule_status         STRING    COMMENT 'Estado de la regla (activa, inactiva)',
-# MAGIC   team_id             BIGINT    COMMENT 'ID del equipo de Trust & Safety asignado',
+# MAGIC   esta_implementada   BOOLEAN   COMMENT 'TRUE si el pipeline tiene lógica para aplicar la regla',
+# MAGIC   n_casos_marcados    BIGINT    COMMENT 'Usuarios o negocio-día marcados por la regla en la última corrida (0 si no aplica)',
+# MAGIC   team_id             BIGINT    COMMENT 'ID del equipo de Trust & Safety responsable',
 # MAGIC   team_name           STRING    COMMENT 'Nombre del equipo responsable',
-# MAGIC   responsable         STRING    COMMENT 'Líder o analista a cargo de la regla',
+# MAGIC   responsable         STRING    COMMENT 'Persona responsable del equipo',
 # MAGIC   team_status         STRING    COMMENT 'Estado operativo del equipo',
+# MAGIC   alerta_gobierno     STRING    COMMENT 'Problema de gobierno detectado sobre la regla (nulo si no hay)',
 # MAGIC   fecha_actualizacion TIMESTAMP COMMENT 'Timestamp de consolidación',
 # MAGIC   CONSTRAINT pk_trust_governance PRIMARY KEY (fraud_rule_id)
 # MAGIC )
-# MAGIC COMMENT 'Reglas de fraude con el equipo de Trust & Safety responsable de aplicarlas. Data Owner: Trust & Safety.'
+# MAGIC COMMENT 'Una fila por regla de fraude: parámetros vigentes, equipo responsable, casos marcados y alertas de gobierno. Data Owner: Trust & Safety.'
 # MAGIC TBLPROPERTIES (delta.enableChangeDataFeed = true);
 
 # COMMAND ----------
@@ -312,8 +333,9 @@ print("✔ Modelo físico validado: todas las columnas documentadas")
 # MAGIC   `dim_trust_governance`: actualizar ambos documentos).
 # MAGIC - `slv_checkin` a grano evento y llaves sustitutas determinísticas (`xxhash64`) en `slv_checkin` y `slv_tip`.
 # MAGIC - Los CHECK se declaran con `ALTER TABLE` separado del `CREATE` para que el notebook sea re-ejecutable.
-# MAGIC - `gld_trust_governance` une reglas y equipos, pero silver no tiene hoy una llave que los relacione:
-# MAGIC   falta definir en el modelo lógico cómo se asigna un equipo a cada regla.
+# MAGIC - `slv_fraud_rule` es un catálogo que gobierna gold: estado, umbral, mínimo de reseñas y puntos de cada regla
+# MAGIC   se leen de la tabla, no del código, y `team_id` asigna un equipo responsable. `slv_trust_safety_area` se crea
+# MAGIC   antes por la FK.
 # MAGIC - Esquema estrella en gold con prefijo `gld_dim_` / `gld_fact_`; dimensiones SCD tipo 1 con clave natural
 # MAGIC   (la muestra es una sola foto del origen: no hay historia que versionar). `gld_dim_usuario` excluye el nombre
 # MAGIC   y `gld_fact_resena` excluye el texto: gold no expone PII.

@@ -67,7 +67,7 @@ resources:
 
         - task_key: SILVER_fraud_rule
           depends_on:
-            - task_key: BRONZE_simulados
+            - task_key: SILVER_trust_safety_area
           run_if: ALL_SUCCESS
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_fraud_rule_bronze_to_silver.py
@@ -98,6 +98,7 @@ resources:
           depends_on:
             - task_key: SILVER_review
             - task_key: SILVER_checkin
+            - task_key: SILVER_fraud_rule
           run_if: ALL_SUCCESS
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_gold_business_anomaly_bursts.py
@@ -113,5 +114,15 @@ resources:
           run_if: ALL_SUCCESS
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_gold_modelo_dimensional.py
+            source: WORKSPACE
+          timeout_seconds: 0
+
+        - task_key: GOLD_trust_governance
+          depends_on:
+            - task_key: GOLD_user_fraud_profile
+            - task_key: GOLD_business_anomaly_bursts
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_gold_trust_governance.py
             source: WORKSPACE
           timeout_seconds: 0
