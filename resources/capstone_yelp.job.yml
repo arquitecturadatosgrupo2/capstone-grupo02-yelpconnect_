@@ -6,51 +6,51 @@ resources:
         enabled: true
       performance_target: PERFORMANCE_OPTIMIZED
       tasks:
-        - task_key: BRONZE_business
+        - task_key: SILVER_business
           run_if: ALL_SUCCESS
           notebook_task:
-            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_business_bronze_to_silver.ipynb
+            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_business_bronze_to_silver.py
             source: WORKSPACE
           timeout_seconds: 0
 
-        - task_key: BRONZE_checkin
+        - task_key: SILVER_checkin
           run_if: ALL_SUCCESS
           notebook_task:
-            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_checkin_bronze_to_silver.ipynb
+            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_checkin_bronze_to_silver.py
             source: WORKSPACE
           timeout_seconds: 0
 
-        - task_key: BRONZE_tip
+        - task_key: SILVER_tip
           run_if: ALL_SUCCESS
           notebook_task:
-            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_tip_bronze_to_silver.ipynb
+            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_tip_bronze_to_silver.py
             source: WORKSPACE
           timeout_seconds: 0
 
-        - task_key: BRONZE_review
+        - task_key: SILVER_review
           run_if: ALL_SUCCESS
           notebook_task:
-            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_review_bronze_to_silver.ipynb
+            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_review_bronze_to_silver.py
             source: WORKSPACE
           timeout_seconds: 0
 
-        - task_key: BRONZE_user
+        - task_key: SILVER_user
           run_if: ALL_SUCCESS
           notebook_task:
-            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_user_bronze_to_silver.ipynb
+            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_user_bronze_to_silver.py
             source: WORKSPACE
           timeout_seconds: 0
 
-        - task_key: BRONZE_fraud_rule
+        - task_key: SILVER_fraud_rule
           run_if: ALL_SUCCESS
           notebook_task:
-            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_fraud_rule_bronze_to_silver.ipynb
+            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_fraud_rule_bronze_to_silver.py
             source: WORKSPACE
           timeout_seconds: 0
 
-        - task_key: BRONZE_trust_safety_area
+        - task_key: SILVER_trust_safety_area
           run_if: ALL_SUCCESS
           notebook_task:
-            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_slv_trust_safety_area_bronze_to_silver.ipynb
+            notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_trust_safety_area_bronze_to_silver.py
             source: WORKSPACE
           timeout_seconds: 0
