@@ -24,7 +24,7 @@
 
 # COMMAND ----------
 
-# DBTITLE 1: Parámetros
+# DBTITLE 1,Parámetros
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
 
@@ -36,7 +36,7 @@ USUARIOS   = "workspace.yelp_silver.slv_user"
 
 # COMMAND ----------
 
-# DBTITLE 1: Transformación según el mapeo bronze → silver
+# DBTITLE 1,Transformación según el mapeo bronze → silver
 base = (spark.table(ORIGEN)
     .select(
         F.col("review_id"),
@@ -54,7 +54,7 @@ base = (spark.table(ORIGEN)
 
 # COMMAND ----------
 
-# DBTITLE 1: Reglas de integridad — cada fila sale con un motivo o sin él
+# DBTITLE 1,Reglas de integridad — cada fila sale con un motivo o sin él
 # 1) review_id repetido: queda la ingesta más reciente (re-carga de un archivo por Auto Loader)
 w_id = Window.partitionBy("review_id").orderBy(F.col("_fecha_ingesta").desc())
 # 2) duplicado lógico: queda la publicada primero (desempate por review_id para que sea determinístico)
@@ -90,7 +90,7 @@ clasificadas = (unicas
 
 # COMMAND ----------
 
-# DBTITLE 1: Marca de autor fuera de la muestra (no es motivo de cuarentena)
+# DBTITLE 1,Marca de autor fuera de la muestra (no es motivo de cuarentena)
 usuarios = spark.table(USUARIOS).select("user_id", F.lit(True).alias("_autor_existe"))
 
 slv = (clasificadas.filter(F.col("motivo").isNull())
@@ -102,7 +102,7 @@ cuarentena = clasificadas.filter(F.col("motivo").isNotNull())
 
 # COMMAND ----------
 
-# DBTITLE 1: Escritura sobre las tablas del DDL de E3 (conserva COMMENT y constraints)
+# DBTITLE 1,Escritura sobre las tablas del DDL de E3 (conserva COMMENT y constraints)
 for tabla in (DESTINO, CUARENTENA):
     assert spark.catalog.tableExists(tabla), f"❌ {tabla} no existe: ejecutar primero E3_modelo_fisico/01_modelo_fisico_ddl"
 
@@ -112,7 +112,7 @@ print(f"✔ {DESTINO} y {CUARENTENA} cargadas")
 
 # COMMAND ----------
 
-# DBTITLE 1: Validación automática
+# DBTITLE 1,Validación automática
 n_origen = spark.table(ORIGEN).count()
 r = spark.table(DESTINO).agg(
     F.count("*").alias("filas"),

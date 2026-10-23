@@ -13,7 +13,7 @@
 
 # COMMAND ----------
 
-# DBTITLE 1: Parámetros
+# DBTITLE 1,Parámetros
 from pyspark.sql import functions as F
 
 ORIGEN  = "workspace.yelp_bronze.brz_trust_safety_area"
@@ -21,7 +21,7 @@ DESTINO = "workspace.yelp_silver.slv_trust_safety_area"
 
 # COMMAND ----------
 
-# DBTITLE 1: Transformación según el mapeo bronze → silver
+# DBTITLE 1,Transformación según el mapeo bronze → silver
 brz = spark.table(ORIGEN)
 
 slv = (brz
@@ -38,7 +38,7 @@ slv = (brz
 
 # COMMAND ----------
 
-# DBTITLE 1: Escritura sobre la tabla del DDL de E3 (conserva COMMENT y constraints)
+# DBTITLE 1,Escritura sobre la tabla del DDL de E3 (conserva COMMENT y constraints)
 assert spark.catalog.tableExists(DESTINO), f"❌ {DESTINO} no existe: ejecutar primero E3_modelo_fisico/01_modelo_fisico_ddl"
 
 slv.select(*spark.table(DESTINO).columns).write.insertInto(DESTINO, overwrite=True)
@@ -46,7 +46,7 @@ print(f"✔ {DESTINO} cargada")
 
 # COMMAND ----------
 
-# DBTITLE 1: Validación automática
+# DBTITLE 1,Validación automática
 r = spark.table(DESTINO).agg(
     F.count("*").alias("filas"),
     F.countDistinct("team_id").alias("pk_distintas"),

@@ -19,7 +19,7 @@ print("✔ Los 5 datasets están presentes")
 
 # COMMAND ----------
 
-# DBTITLE 1: Exploración rápida de esquemas y volúmenes
+# DBTITLE 1,Exploración rápida de esquemas y volúmenes
 for e in ESPERADOS:
     df = spark.read.json(f"{RAW}/{e}.json.gz")
     print(f"\n=== {e} · {df.count():,} filas ===")

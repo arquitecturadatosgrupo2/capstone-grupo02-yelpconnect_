@@ -16,7 +16,7 @@
 
 # COMMAND ----------
 
-# DBTITLE 1: Ejemplo resuelto — gld_kpi_negocio_mensual
+# DBTITLE 1,Ejemplo resuelto — gld_kpi_negocio_mensual
 # MAGIC %sql
 # MAGIC CREATE OR REPLACE TABLE workspace.yelp_gold.gld_kpi_negocio_mensual
 # MAGIC COMMENT 'KPIs mensuales por negocio para Producto. Fuente: slv_review + slv_business.'
@@ -35,7 +35,7 @@
 
 # COMMAND ----------
 
-# DBTITLE 1: ✏️ TODO — gld_checkins_diarios, gld_salud_resenas y el esquema estrella
+# DBTITLE 1,✏️ TODO — gld_checkins_diarios, gld_salud_resenas y el esquema estrella
 # Requisitos:
 #  - dim_fecha generada programáticamente (sequence + explode).
 #  - dim_negocio con SCD según lo decidido en el modelo lógico del Documento Formal de Arquitectura de Datos.
@@ -44,7 +44,7 @@
 
 # COMMAND ----------
 
-# DBTITLE 1: Validación — cada tabla gold tiene consumidor declarado
+# DBTITLE 1,Validación — cada tabla gold tiene consumidor declarado
 tablas_gold = [r.tableName for r in spark.sql("SHOW TABLES IN workspace.yelp_gold").collect()]
 assert len(tablas_gold) >= 5, f"Se esperan ≥5 objetos gold (hay {len(tablas_gold)})"
 print("✔ Capa gold:", tablas_gold)

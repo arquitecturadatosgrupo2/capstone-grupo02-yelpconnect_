@@ -13,7 +13,7 @@
 
 # COMMAND ----------
 
-# DBTITLE 1: Control 1 — Clasificación con tags
+# DBTITLE 1,Control 1 — Clasificación con tags
 # MAGIC %sql
 # MAGIC -- Etiquetar el schema y las columnas sensibles.
 # MAGIC -- ✏️ TODO: completar según la matriz RACI aprobada en el Documento Formal de Arquitectura de Datos
@@ -22,7 +22,7 @@
 
 # COMMAND ----------
 
-# DBTITLE 1: Control 2 — Permisos por capa (principio de mínimo privilegio)
+# DBTITLE 1,Control 2 — Permisos por capa (principio de mínimo privilegio)
 # MAGIC %sql
 # MAGIC -- Modelo objetivo (documentarlo aunque Free Edition limite grupos):
 # MAGIC --   bronze: solo el pipeline (custodian) · silver: analistas leen · gold: todos leen
@@ -36,7 +36,7 @@
 
 # COMMAND ----------
 
-# DBTITLE 1: Control 3 — Enmascaramiento de PII
+# DBTITLE 1,Control 3 — Enmascaramiento de PII
 # MAGIC %sql
 # MAGIC -- Opción A (recomendada): función de máscara + column mask
 # MAGIC CREATE OR REPLACE FUNCTION workspace.yelp_gov.mascara_nombre(nombre STRING)

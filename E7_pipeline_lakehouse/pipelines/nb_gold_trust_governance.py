@@ -17,7 +17,7 @@
 
 # COMMAND ----------
 
-# DBTITLE 1: Parámetros
+# DBTITLE 1,Parámetros
 from pyspark.sql import functions as F
 
 SLV = "workspace.yelp_silver"
@@ -30,7 +30,7 @@ IMPLEMENTADAS = {1, 2, 3, 4, 7, 5, 6, 9}
 
 # COMMAND ----------
 
-# DBTITLE 1: Casos marcados por regla en la última corrida
+# DBTITLE 1,Casos marcados por regla en la última corrida
 casos = (
     spark.table(f"{GLD}.gld_user_fraud_profile").select(F.explode("reglas_activadas").alias("fraud_rule_id"))
     .unionByName(
@@ -41,7 +41,7 @@ casos = (
 
 # COMMAND ----------
 
-# DBTITLE 1: Regla + equipo + casos + alerta de gobierno
+# DBTITLE 1,Regla + equipo + casos + alerta de gobierno
 reglas = spark.table(f"{SLV}.slv_fraud_rule")
 equipos = spark.table(f"{SLV}.slv_trust_safety_area").select("team_id", "team_name", "responsable", "team_status")
 
@@ -67,7 +67,7 @@ gld = (reglas
 
 # COMMAND ----------
 
-# DBTITLE 1: Escritura sobre la tabla del DDL de E3 (conserva COMMENT y constraints)
+# DBTITLE 1,Escritura sobre la tabla del DDL de E3 (conserva COMMENT y constraints)
 assert spark.catalog.tableExists(DESTINO), f"❌ {DESTINO} no existe: ejecutar primero E3_modelo_fisico/01_modelo_fisico_ddl"
 
 gld.select(*spark.table(DESTINO).columns).write.insertInto(DESTINO, overwrite=True)
@@ -75,7 +75,7 @@ print(f"✔ {DESTINO} cargada")
 
 # COMMAND ----------
 
-# DBTITLE 1: Validación automática
+# DBTITLE 1,Validación automática
 df = spark.table(DESTINO)
 r = df.agg(
     F.count("*").alias("filas"),

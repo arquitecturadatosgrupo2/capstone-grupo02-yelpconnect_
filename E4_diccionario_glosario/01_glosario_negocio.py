@@ -22,14 +22,14 @@
 
 # COMMAND ----------
 
-# DBTITLE 1: Volume donde el grupo sube los artefactos de gobierno
+# DBTITLE 1,Volume donde el grupo sube los artefactos de gobierno
 spark.sql("CREATE VOLUME IF NOT EXISTS workspace.yelp_gov.artefactos")
 RUTA = "/Volumes/workspace/yelp_gov/artefactos/Glosario_de_terminos_de_negocio_YelpConnect.xlsx"
 print(f"Suba el Excel completado a: {RUTA}")
 
 # COMMAND ----------
 
-# DBTITLE 1: Carga del Excel institucional → tabla Delta
+# DBTITLE 1,Carga del Excel institucional → tabla Delta
 import pandas as pd
 
 COLUMNAS = ["termino", "sinonimos", "definicion_negocio", "definicion_tecnica",
@@ -51,7 +51,7 @@ display(spark.table("workspace.yelp_gov.glosario_negocio"))
 
 # COMMAND ----------
 
-# DBTITLE 1: Validadores del Definition of Done (no modificar)
+# DBTITLE 1,Validadores del Definition of Done (no modificar)
 from pyspark.sql import functions as F
 
 g = spark.table("workspace.yelp_gov.glosario_negocio")
@@ -71,7 +71,7 @@ print(f"✔ Glosario válido: {n} términos · {sin_dominio} dominios · "
 
 # COMMAND ----------
 
-# DBTITLE 1: Conflictos semánticos del caso — verificación explícita
+# DBTITLE 1,Conflictos semánticos del caso — verificación explícita
 # MAGIC %sql
 # MAGIC -- Los tres conflictos del enunciado deben estar resueltos con un término propio
 # MAGIC SELECT termino, dominio_datos, propietario

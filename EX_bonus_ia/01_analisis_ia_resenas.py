@@ -12,7 +12,7 @@
 
 # COMMAND ----------
 
-# DBTITLE 1: Sentimiento y clasificación de una muestra de reseñas
+# DBTITLE 1,Sentimiento y clasificación de una muestra de reseñas
 # MAGIC %sql
 # MAGIC CREATE OR REPLACE TABLE workspace.yelp_gold.gld_resenas_enriquecidas
 # MAGIC COMMENT 'Muestra de reseñas enriquecidas con IA: sentimiento y tema. Consumidor: Trust & Safety y Producto.'
@@ -30,7 +30,7 @@
 
 # COMMAND ----------
 
-# DBTITLE 1: ✏️ TODO — Detección de inconsistencia rating vs sentimiento (señal de fraude)
+# DBTITLE 1,✏️ TODO — Detección de inconsistencia rating vs sentimiento (señal de fraude)
 # MAGIC %sql
 # MAGIC -- Reseñas con 5 estrellas y sentimiento negativo (o viceversa) son candidatas a revisión
 # MAGIC -- por Trust & Safety. Construir la consulta y agregar el visual al dashboard E8.

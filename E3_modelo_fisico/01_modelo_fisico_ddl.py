@@ -333,7 +333,7 @@
 
 # COMMAND ----------
 
-# DBTITLE 1: Validación automática del entregable (correr antes del PR)
+# DBTITLE 1,Validación automática del entregable (correr antes del PR)
 tablas = spark.sql("SHOW TABLES IN workspace.yelp_silver").collect()
 assert len(tablas) >= 5, "Deben existir al menos las 5 entidades en silver"
 

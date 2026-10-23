@@ -21,7 +21,7 @@
 
 # COMMAND ----------
 
-# DBTITLE 1: Q1 — Evolución de reseñas y rating (Producto)
+# DBTITLE 1,Q1 — Evolución de reseñas y rating (Producto)
 # MAGIC %sql
 # MAGIC SELECT mes, sum(n_resenas) AS resenas, round(avg(rating_promedio),2) AS rating
 # MAGIC FROM workspace.yelp_gold.gld_kpi_negocio_mensual
@@ -29,7 +29,7 @@
 
 # COMMAND ----------
 
-# DBTITLE 1: Q2 — Salud de calidad de datos (CDO)
+# DBTITLE 1,Q2 — Salud de calidad de datos (CDO)
 # MAGIC %sql
 # MAGIC SELECT r.dimension, round(avg(res.pct_cumplimiento),2) AS cumplimiento,
 # MAGIC        sum(CASE WHEN NOT res.paso THEN 1 ELSE 0 END)  AS reglas_en_rojo
@@ -40,7 +40,7 @@
 
 # COMMAND ----------
 
-# DBTITLE 1: Q3 — KPIs de gobierno (CDO)
+# DBTITLE 1,Q3 — KPIs de gobierno (CDO)
 # MAGIC %sql
 # MAGIC SELECT
 # MAGIC   (SELECT round(100.0*sum(CASE WHEN descripcion_columna IS NOT NULL THEN 1 ELSE 0 END)/count(*),1)
@@ -50,7 +50,7 @@
 
 # COMMAND ----------
 
-# DBTITLE 1: ✏️ TODO — Q4 a Q8
+# DBTITLE 1,✏️ TODO — Q4 a Q8
 # Mínimo: top negocios por rating ponderado, check-ins diarios (Ops Comerciales),
 # reseñas en cuarentena/duplicadas (Trust & Safety), tendencia de la bitácora del pipeline.
 

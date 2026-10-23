@@ -19,7 +19,7 @@ print(f"Configurando lakehouse del Grupo {GRUPO} en el catálogo '{CATALOGO}'")
 
 # COMMAND ----------
 
-# DBTITLE 1: Schemas de la arquitectura medallón
+# DBTITLE 1,Schemas de la arquitectura medallón
 for schema, comentario in [
     ("yelp_bronze", "Capa Bronze: datos crudos tal como llegan de YelpConnect"),
     ("yelp_silver", "Capa Silver: datos limpios, conformados y con calidad validada"),
@@ -31,7 +31,7 @@ print("Schemas creados ✔")
 
 # COMMAND ----------
 
-# DBTITLE 1: Volume para datos crudos
+# DBTITLE 1,Volume para datos crudos
 spark.sql(f"""
 CREATE VOLUME IF NOT EXISTS {CATALOGO}.yelp_bronze.raw
 COMMENT 'Zona de aterrizaje de archivos crudos (business, review, user, tip, checkin)'
@@ -40,7 +40,7 @@ print("Volume listo → /Volumes/workspace/yelp_bronze/raw/")
 
 # COMMAND ----------
 
-# DBTITLE 1: Tablas de control de gobierno (se llenan en E4, E5 y E6)
+# DBTITLE 1,Tablas de control de gobierno (se llenan en E4, E5 y E6)
 spark.sql(f"""
 CREATE TABLE IF NOT EXISTS {CATALOGO}.yelp_gov.glosario_negocio (
   termino               STRING COMMENT 'Nombre del Término — nombre oficial aprobado del concepto',

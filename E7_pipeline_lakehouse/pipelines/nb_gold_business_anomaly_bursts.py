@@ -17,7 +17,7 @@
 
 # COMMAND ----------
 
-# DBTITLE 1: Parámetros
+# DBTITLE 1,Parámetros
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
 
@@ -26,7 +26,7 @@ DESTINO = "workspace.yelp_gold.gld_business_anomaly_bursts"
 
 # COMMAND ----------
 
-# DBTITLE 1: Actividad diaria por negocio (reseñas + check-ins)
+# DBTITLE 1,Actividad diaria por negocio (reseñas + check-ins)
 resenas_dia = (spark.table(f"{SLV}.slv_review")
     .groupBy("business_id", F.to_date("fecha_publicacion").alias("fecha_ventana"))
     .agg(
@@ -58,7 +58,7 @@ actividad = (actividad
 
 # COMMAND ----------
 
-# DBTITLE 1: Detección de ráfagas — reglas y parámetros del catálogo slv_fraud_rule
+# DBTITLE 1,Detección de ráfagas — reglas y parámetros del catálogo slv_fraud_rule
 # El código define la FORMA de cada regla; umbral, mínimo de reseñas y estado vienen del catálogo.
 CONDICIONES = {
     # fraud_rule_id: (parámetros obligatorios, condición en función de la fila del catálogo)
@@ -99,7 +99,7 @@ gld = (actividad
 
 # COMMAND ----------
 
-# DBTITLE 1: Escritura sobre la tabla del DDL de E3 (conserva COMMENT y constraints)
+# DBTITLE 1,Escritura sobre la tabla del DDL de E3 (conserva COMMENT y constraints)
 assert spark.catalog.tableExists(DESTINO), f"❌ {DESTINO} no existe: ejecutar primero E3_modelo_fisico/01_modelo_fisico_ddl"
 
 gld.select(*spark.table(DESTINO).columns).write.insertInto(DESTINO, overwrite=True)
@@ -107,7 +107,7 @@ print(f"✔ {DESTINO} cargada")
 
 # COMMAND ----------
 
-# DBTITLE 1: Validación automática
+# DBTITLE 1,Validación automática
 r = spark.table(DESTINO).agg(
     F.count("*").alias("filas"),
     F.countDistinct("business_id", "fecha_ventana").alias("pk_distintas"),

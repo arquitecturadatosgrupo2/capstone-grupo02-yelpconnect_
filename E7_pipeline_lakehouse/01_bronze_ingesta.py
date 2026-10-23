@@ -30,7 +30,7 @@
 
 # COMMAND ----------
 
-# DBTITLE 1: Parámetros
+# DBTITLE 1,Parámetros
 from pyspark.sql import functions as F
 
 RAW = "/Volumes/workspace/yelp_bronze/raw"
@@ -39,7 +39,7 @@ ENTIDADES = ["business", "user", "tip", "checkin"]  # review va con Auto Loader 
 
 # COMMAND ----------
 
-# DBTITLE 1: Modo batch — 4 entidades
+# DBTITLE 1,Modo batch — 4 entidades
 for e in ENTIDADES:
     (spark.read.json(f"{RAW}/{e}.json.gz")
         .withColumn("_archivo_origen", F.col("_metadata.file_path"))   # input_file_name() no está soportado en Unity Catalog
@@ -51,7 +51,7 @@ for e in ENTIDADES:
 
 # COMMAND ----------
 
-# DBTITLE 1: Modo incremental — Auto Loader para review (la entidad de mayor volumen)
+# DBTITLE 1,Modo incremental — Auto Loader para review (la entidad de mayor volumen)
 # Checkpoint propio de brz_review: el de _checkpoints/review pertenece a una carga anterior y ya marcó
 # review.json.gz como procesado, por lo que reutilizarlo dejaría brz_review vacía.
 CHECKPOINT = f"{RAW}/_checkpoints/brz_review"
@@ -70,7 +70,7 @@ query = (spark.readStream
     .toTable(f"{BRZ}.brz_review"))
 query.awaitTermination()
 
-nuevas = sum(p["numInputRows"] for p in query.recentProgress)
+nuevas = sum(p.get("numInputRows") or 0 for p in query.recentProgress)   # sin archivos nuevos llega nulo
 print(f"✔ brz_review: {nuevas:,} filas nuevas en esta corrida · {spark.table(f'{BRZ}.brz_review').count():,} filas en total")
 
 # COMMAND ----------
@@ -97,7 +97,7 @@ print(f"✔ brz_review: {nuevas:,} filas nuevas en esta corrida · {spark.table(
 
 # COMMAND ----------
 
-# DBTITLE 1: Validación automática
+# DBTITLE 1,Validación automática
 for e in ENTIDADES + ["review"]:
     r = spark.table(f"{BRZ}.brz_{e}").agg(
         F.count("*").alias("filas"),

@@ -15,7 +15,7 @@
 
 # COMMAND ----------
 
-# DBTITLE 1: Catálogo de reglas (3 ejemplos resueltos — completar hasta ≥12)
+# DBTITLE 1,Catálogo de reglas (3 ejemplos resueltos — completar hasta ≥12)
 from pyspark.sql import Row
 
 reglas = [
@@ -40,7 +40,7 @@ display(spark.table("workspace.yelp_gov.dq_reglas"))
 
 # COMMAND ----------
 
-# DBTITLE 1: Motor genérico de evaluación (no modificar — extender si hace falta)
+# DBTITLE 1,Motor genérico de evaluación (no modificar — extender si hace falta)
 from pyspark.sql import functions as F
 
 def evaluar_reglas():
@@ -64,7 +64,7 @@ display(evaluar_reglas())
 
 # COMMAND ----------
 
-# DBTITLE 1: Scorecard de calidad (insumo directo del dashboard E8)
+# DBTITLE 1,Scorecard de calidad (insumo directo del dashboard E8)
 # MAGIC %sql
 # MAGIC SELECT r.dimension,
 # MAGIC        count(*)                                    AS reglas,
