@@ -20,16 +20,16 @@ from pyspark.sql import functions as F
 
 SEMILLAS = "/Volumes/workspace/yelp_bronze/raw/semillas"
 FUENTES = {
-    # archivo semilla → tabla bronze   (✏️ TODO: renombrar a brz_* por convención al re-ejecutar la ingesta)
-    "fraud_rule":        "workspace.yelp_bronze.fraud_rule",
-    "trust_safety_area": "workspace.yelp_bronze.trust_safety_area",
+    # archivo semilla → tabla bronze
+    "fraud_rule":        "workspace.yelp_bronze.brz_fraud_rule",
+    "trust_safety_area": "workspace.yelp_bronze.brz_trust_safety_area",
 }
 
 # COMMAND ----------
 
 # MAGIC %sql
 # MAGIC -- Tablas bronze según YELP.sql (todo STRING + auditoría). IF NOT EXISTS: no altera las existentes.
-# MAGIC CREATE TABLE IF NOT EXISTS workspace.yelp_bronze.fraud_rule (
+# MAGIC CREATE TABLE IF NOT EXISTS workspace.yelp_bronze.brz_fraud_rule (
 # MAGIC   fraud_rule_id     STRING COMMENT 'Identificador de la regla, tal como llega del origen',
 # MAGIC   fraud_description STRING COMMENT 'Descripción de la regla, tal como llega del origen',
 # MAGIC   risk_level        STRING COMMENT 'Nivel de riesgo sin estandarizar',
@@ -38,7 +38,7 @@ FUENTES = {
 # MAGIC   source_file       STRING COMMENT 'Archivo de origen (auditoría)'
 # MAGIC ) COMMENT 'Reglas de fraude de Trust & Safety — fuente simulada, fidelidad al origen.';
 # MAGIC
-# MAGIC CREATE TABLE IF NOT EXISTS workspace.yelp_bronze.trust_safety_area (
+# MAGIC CREATE TABLE IF NOT EXISTS workspace.yelp_bronze.brz_trust_safety_area (
 # MAGIC   team_id        STRING COMMENT 'Identificador del equipo, tal como llega del origen',
 # MAGIC   team_name      STRING COMMENT 'Nombre del equipo',
 # MAGIC   responsible    STRING COMMENT 'Responsable del equipo',
@@ -87,4 +87,4 @@ for archivo, tabla in FUENTES.items():
 # MAGIC ### Definition of Done (bronze simulados)
 # MAGIC - [ ] Semillas subidas a `raw/semillas/` y validación en verde.
 # MAGIC - [ ] Origen simulado declarado como «sistema fuente» en el diccionario de datos (E4).
-# MAGIC - [ ] Tablas renombradas a `brz_fraud_rule` y `brz_trust_safety_area` junto con el resto de bronze.
+# MAGIC - [x] Tablas con nombres `brz_fraud_rule` y `brz_trust_safety_area` (convención).

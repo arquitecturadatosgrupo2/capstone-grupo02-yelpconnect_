@@ -16,7 +16,7 @@
 # DBTITLE 1: Parámetros
 from pyspark.sql import functions as F
 
-ORIGEN  = "workspace.yelp_bronze.checkin"   # ✏️ TODO: renombrar a brz_checkin (convención) al re-ejecutar la ingesta
+ORIGEN  = "workspace.yelp_bronze.brz_checkin"
 DESTINO = "workspace.yelp_silver.slv_checkin"
 
 # COMMAND ----------
@@ -77,4 +77,4 @@ print(f"✔ {DESTINO}: {r.filas:,} check-ins en {r.negocios:,} negocios · PK ú
 # MAGIC ### Definition of Done (slv_checkin)
 # MAGIC - [ ] Corre de inicio a fin sobre la muestra y la validación pasa.
 # MAGIC - [ ] Definición de «check-in válido» del glosario coherente con este grano.
-# MAGIC - [ ] Origen renombrado a `brz_checkin` junto con la ingesta (E7.1).
+# MAGIC - [x] Origen `brz_checkin` con metadata de auditoría (E7.1).

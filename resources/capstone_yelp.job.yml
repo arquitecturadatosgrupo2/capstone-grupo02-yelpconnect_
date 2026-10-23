@@ -6,7 +6,16 @@ resources:
         enabled: true
       performance_target: PERFORMANCE_OPTIMIZED
       tasks:
+        - task_key: BRONZE_yelp
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: ../E7_pipeline_lakehouse/01_bronze_ingesta.py
+            source: WORKSPACE
+          timeout_seconds: 0
+
         - task_key: SILVER_business
+          depends_on:
+            - task_key: BRONZE_yelp
           run_if: ALL_SUCCESS
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_business_bronze_to_silver.py
@@ -14,6 +23,8 @@ resources:
           timeout_seconds: 0
 
         - task_key: SILVER_checkin
+          depends_on:
+            - task_key: BRONZE_yelp
           run_if: ALL_SUCCESS
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_checkin_bronze_to_silver.py
@@ -21,6 +32,8 @@ resources:
           timeout_seconds: 0
 
         - task_key: SILVER_tip
+          depends_on:
+            - task_key: BRONZE_yelp
           run_if: ALL_SUCCESS
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_tip_bronze_to_silver.py
@@ -28,6 +41,8 @@ resources:
           timeout_seconds: 0
 
         - task_key: SILVER_review
+          depends_on:
+            - task_key: BRONZE_yelp
           run_if: ALL_SUCCESS
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_review_bronze_to_silver.py
@@ -35,6 +50,8 @@ resources:
           timeout_seconds: 0
 
         - task_key: SILVER_user
+          depends_on:
+            - task_key: BRONZE_yelp
           run_if: ALL_SUCCESS
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_user_bronze_to_silver.py

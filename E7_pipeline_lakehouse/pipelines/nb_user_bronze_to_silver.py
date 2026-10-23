@@ -16,7 +16,7 @@
 # DBTITLE 1: Parámetros
 from pyspark.sql import functions as F
 
-ORIGEN  = "workspace.yelp_bronze.user"   # ✏️ TODO: renombrar a brz_user (convención) al re-ejecutar la ingesta
+ORIGEN  = "workspace.yelp_bronze.brz_user"
 DESTINO = "workspace.yelp_silver.slv_user"
 
 # COMMAND ----------
@@ -75,4 +75,4 @@ print(f"✔ {DESTINO}: {r.filas:,} filas · PK única")
 # MAGIC ### Definition of Done (slv_user)
 # MAGIC - [ ] Corre de inicio a fin sobre la muestra y la validación pasa.
 # MAGIC - [ ] `nombre` clasificado como PII en el diccionario y con tag aplicado (E4/E6).
-# MAGIC - [ ] Origen renombrado a `brz_user` junto con la ingesta (E7.1).
+# MAGIC - [x] Origen `brz_user` con metadata de auditoría (E7.1).

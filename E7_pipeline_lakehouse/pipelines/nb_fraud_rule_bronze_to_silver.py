@@ -16,7 +16,7 @@
 # DBTITLE 1: Parámetros
 from pyspark.sql import functions as F
 
-ORIGEN  = "workspace.yelp_bronze.fraud_rule"   # ✏️ TODO: renombrar a brz_fraud_rule (convención) al re-ejecutar la ingesta
+ORIGEN  = "workspace.yelp_bronze.brz_fraud_rule"
 DESTINO = "workspace.yelp_silver.slv_fraud_rule"
 
 # COMMAND ----------
@@ -66,4 +66,4 @@ print(f"✔ {DESTINO}: {r.filas:,} filas · PK única")
 # MAGIC ### Definition of Done (slv_fraud_rule)
 # MAGIC - [ ] Corre de inicio a fin sobre la muestra y la validación pasa.
 # MAGIC - [ ] Origen de la fuente simulada documentado (sistema fuente en el diccionario).
-# MAGIC - [ ] Origen renombrado a `brz_fraud_rule` junto con la ingesta (E7.1).
+# MAGIC - [x] Origen `brz_fraud_rule` con metadata de auditoría (E7.1).

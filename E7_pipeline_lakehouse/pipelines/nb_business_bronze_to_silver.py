@@ -15,7 +15,7 @@
 # DBTITLE 1: Parámetros
 from pyspark.sql import functions as F
 
-ORIGEN  = "workspace.yelp_bronze.business"   # ✏️ TODO: renombrar a brz_business (convención) al re-ejecutar la ingesta
+ORIGEN  = "workspace.yelp_bronze.brz_business"
 DESTINO = "workspace.yelp_silver.slv_business"
 
 # COMMAND ----------
@@ -72,4 +72,4 @@ print(f"✔ {DESTINO}: {r.filas:,} filas · PK única")
 # MAGIC ### Definition of Done (slv_business)
 # MAGIC - [ ] Corre de inicio a fin sobre la muestra y la validación pasa.
 # MAGIC - [ ] Columnas y tipos idénticos al DDL de E3.
-# MAGIC - [ ] Origen renombrado a `brz_business` junto con la ingesta (E7.1).
+# MAGIC - [x] Origen `brz_business` con metadata de auditoría (E7.1).
