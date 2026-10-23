@@ -11,6 +11,8 @@ resources:
         timezone_id: America/Lima
       # Tope de la corrida completa: protege la cuota diaria de Free Edition
       timeout_seconds: 7200
+      # El on_failure del job no cubre SUCCESS_WITH_FAILURES (la bitácora siempre termina bien):
+      # cada tarea del pipeline tiene además su propia alerta
       email_notifications:
         on_failure:
           - ${workspace.current_user.userName}
@@ -21,6 +23,9 @@ resources:
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/01_bronze_ingesta.py
             source: WORKSPACE
+          email_notifications:
+            on_failure:
+              - ${workspace.current_user.userName}
           timeout_seconds: 1800
           max_retries: 1
           min_retry_interval_millis: 60000
@@ -31,6 +36,9 @@ resources:
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_simulados_raw_to_bronze.py
             source: WORKSPACE
+          email_notifications:
+            on_failure:
+              - ${workspace.current_user.userName}
           timeout_seconds: 600
           max_retries: 1
           min_retry_interval_millis: 60000
@@ -43,6 +51,9 @@ resources:
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_business_bronze_to_silver.py
             source: WORKSPACE
+          email_notifications:
+            on_failure:
+              - ${workspace.current_user.userName}
           timeout_seconds: 900
           max_retries: 1
           min_retry_interval_millis: 60000
@@ -55,6 +66,9 @@ resources:
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_user_bronze_to_silver.py
             source: WORKSPACE
+          email_notifications:
+            on_failure:
+              - ${workspace.current_user.userName}
           timeout_seconds: 900
           max_retries: 1
           min_retry_interval_millis: 60000
@@ -69,6 +83,9 @@ resources:
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_review_bronze_to_silver.py
             source: WORKSPACE
+          email_notifications:
+            on_failure:
+              - ${workspace.current_user.userName}
           timeout_seconds: 1800
           max_retries: 1
           min_retry_interval_millis: 60000
@@ -81,6 +98,9 @@ resources:
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_tip_bronze_to_silver.py
             source: WORKSPACE
+          email_notifications:
+            on_failure:
+              - ${workspace.current_user.userName}
           timeout_seconds: 900
           max_retries: 1
           min_retry_interval_millis: 60000
@@ -93,6 +113,9 @@ resources:
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_checkin_bronze_to_silver.py
             source: WORKSPACE
+          email_notifications:
+            on_failure:
+              - ${workspace.current_user.userName}
           timeout_seconds: 1200
           max_retries: 1
           min_retry_interval_millis: 60000
@@ -105,6 +128,9 @@ resources:
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_trust_safety_area_bronze_to_silver.py
             source: WORKSPACE
+          email_notifications:
+            on_failure:
+              - ${workspace.current_user.userName}
           timeout_seconds: 600
           max_retries: 1
           min_retry_interval_millis: 60000
@@ -117,13 +143,37 @@ resources:
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_fraud_rule_bronze_to_silver.py
             source: WORKSPACE
+          email_notifications:
+            on_failure:
+              - ${workspace.current_user.userName}
           timeout_seconds: 600
           max_retries: 1
           min_retry_interval_millis: 60000
           retry_on_timeout: true
 
+        - task_key: DQ_gate
+          depends_on:
+            - task_key: SILVER_business
+            - task_key: SILVER_user
+            - task_key: SILVER_review
+            - task_key: SILVER_tip
+            - task_key: SILVER_checkin
+            - task_key: SILVER_trust_safety_area
+            - task_key: SILVER_fraud_rule
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: ../E5_calidad_datos/01_reglas_calidad.py
+            source: WORKSPACE
+          email_notifications:
+            on_failure:
+              - ${workspace.current_user.userName}
+          timeout_seconds: 900
+          # max_retries 0 no llega al job (el bundle omite los ceros) y serverless reintenta por defecto:
+          # el gate puede correr dos veces; con los mismos datos falla igual y solo cuesta ~1 min
+
         - task_key: GOLD_user_fraud_profile
           depends_on:
+            - task_key: DQ_gate
             - task_key: SILVER_user
             - task_key: SILVER_review
             - task_key: SILVER_fraud_rule
@@ -131,6 +181,9 @@ resources:
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_gold_user_fraud_profile.py
             source: WORKSPACE
+          email_notifications:
+            on_failure:
+              - ${workspace.current_user.userName}
           timeout_seconds: 1200
           max_retries: 1
           min_retry_interval_millis: 60000
@@ -138,6 +191,7 @@ resources:
 
         - task_key: GOLD_business_anomaly_bursts
           depends_on:
+            - task_key: DQ_gate
             - task_key: SILVER_review
             - task_key: SILVER_checkin
             - task_key: SILVER_fraud_rule
@@ -145,6 +199,9 @@ resources:
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_gold_business_anomaly_bursts.py
             source: WORKSPACE
+          email_notifications:
+            on_failure:
+              - ${workspace.current_user.userName}
           timeout_seconds: 1200
           max_retries: 1
           min_retry_interval_millis: 60000
@@ -152,6 +209,7 @@ resources:
 
         - task_key: GOLD_modelo_dimensional
           depends_on:
+            - task_key: DQ_gate
             - task_key: SILVER_business
             - task_key: SILVER_user
             - task_key: SILVER_review
@@ -160,6 +218,9 @@ resources:
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_gold_modelo_dimensional.py
             source: WORKSPACE
+          email_notifications:
+            on_failure:
+              - ${workspace.current_user.userName}
           timeout_seconds: 1800
           max_retries: 1
           min_retry_interval_millis: 60000
@@ -173,6 +234,9 @@ resources:
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_gold_trust_governance.py
             source: WORKSPACE
+          email_notifications:
+            on_failure:
+              - ${workspace.current_user.userName}
           timeout_seconds: 600
           max_retries: 1
           min_retry_interval_millis: 60000
@@ -189,4 +253,7 @@ resources:
             source: WORKSPACE
             base_parameters:
               job_run_id: "{{job.run_id}}"
+          email_notifications:
+            on_failure:
+              - ${workspace.current_user.userName}
           timeout_seconds: 600
