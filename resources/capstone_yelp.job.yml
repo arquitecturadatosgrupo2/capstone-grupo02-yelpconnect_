@@ -43,6 +43,8 @@ resources:
         - task_key: SILVER_review
           depends_on:
             - task_key: BRONZE_yelp
+            - task_key: SILVER_business
+            - task_key: SILVER_user
           run_if: ALL_SUCCESS
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_review_bronze_to_silver.py
