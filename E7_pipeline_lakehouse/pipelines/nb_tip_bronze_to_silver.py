@@ -15,7 +15,7 @@
 # DBTITLE 1: Parámetros
 from pyspark.sql import functions as F
 
-ORIGEN  = "workspace.yelp_bronze.tip"   # ✏️ TODO: renombrar a brz_tip (convención) al re-ejecutar la ingesta
+ORIGEN  = "workspace.yelp_bronze.brz_tip"
 DESTINO = "workspace.yelp_silver.slv_tip"
 
 # COMMAND ----------
@@ -69,4 +69,4 @@ print(f"✔ {DESTINO}: {r.filas:,} filas · PK única")
 # MAGIC ### Definition of Done (slv_tip)
 # MAGIC - [ ] Corre de inicio a fin sobre la muestra y la validación pasa.
 # MAGIC - [ ] Decisión de llave sustituta reflejada en el modelo lógico del Documento Formal.
-# MAGIC - [ ] Origen renombrado a `brz_tip` junto con la ingesta (E7.1).
+# MAGIC - [x] Origen `brz_tip` con metadata de auditoría (E7.1).

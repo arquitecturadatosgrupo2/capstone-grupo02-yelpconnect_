@@ -16,7 +16,7 @@
 # DBTITLE 1: Parámetros
 from pyspark.sql import functions as F
 
-ORIGEN  = "workspace.yelp_bronze.review"   # ✏️ TODO: renombrar a brz_review (convención) al re-ejecutar la ingesta
+ORIGEN  = "workspace.yelp_bronze.brz_review"
 DESTINO = "workspace.yelp_silver.slv_review"
 
 # COMMAND ----------
@@ -76,4 +76,4 @@ print(f"✔ {DESTINO}: {r.filas:,} filas · PK única")
 # MAGIC ### Definition of Done (slv_review)
 # MAGIC - [ ] Corre de inicio a fin sobre la muestra y la validación pasa.
 # MAGIC - [ ] Criterio de duplicados lógicos documentado + tabla de cuarentena operativa.
-# MAGIC - [ ] Origen reemplazado por `brz_review` alimentada con Auto Loader (E7.1 / M7).
+# MAGIC - [x] Origen `brz_review` alimentada con Auto Loader (E7.1 / M7).
