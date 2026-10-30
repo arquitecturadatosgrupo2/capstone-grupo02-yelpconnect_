@@ -119,12 +119,12 @@ CREATE TABLE IF NOT EXISTS {CATALOGO}.yelp_gov.dq_resultados (
 spark.sql(f"""
 CREATE TABLE IF NOT EXISTS {CATALOGO}.yelp_gov.matriz_raci (
   entidad          STRING  COMMENT 'Entidad de datos (business, review, user...)',
-  dominio          STRING,
-  data_owner       STRING  COMMENT 'Área/rol accountable del caso Yelp',
-  data_steward     STRING,
-  data_custodian   STRING,
-  consumidores     STRING  COMMENT 'Áreas que consumen la entidad',
-  clasificacion    STRING  COMMENT 'publica|interna|confidencial|pii'
+  dominio          STRING  COMMENT 'Dominio o tema de datos del diccionario',
+  data_owner       STRING  COMMENT 'A · Rol accountable de la entidad (gov_rol.rol)',
+  data_steward     STRING  COMMENT 'R · Rol de gobierno que mantiene calidad y metadata',
+  data_custodian   STRING  COMMENT 'R · Rol técnico que opera el pipeline',
+  consumidores     STRING  COMMENT 'I · Roles con lectura sobre las tablas de la entidad (gov_permiso_rol)',
+  clasificacion    STRING  COMMENT 'Clasificación máxima de las columnas de la entidad: publico|interno|confidencial|restringido'
 ) COMMENT 'E6 · Asignación de roles y responsabilidades sobre entidades'
 """)
 print("Tablas de control creadas ✔")

@@ -126,3 +126,10 @@ E7/03_gold_productos_datos            →  E8/01_consultas_base_dashboard
       ↓
 E7/04_job_orquestacion                →  EX/01_analisis_ia_resenas (bonus)
 ```
+
+**Paso manual de E6 (roles):** copiar `E6_controles_gobierno/artefactos/roles_usuarios_PLANTILLA.csv`
+a `roles_usuarios.csv` (no se versiona: contiene correos), completar qué usuario actúa cada rol y
+subirlo a `/Volumes/workspace/yelp_gov/artefactos/`. `E6/01_controles_unity_catalog` lo ejecuta el
+**custodio** (la cuenta que corre el job) después de E4 y E5, y de nuevo cada vez que cambia la
+clasificación del diccionario o la asignación de roles. `E6/02_demo_roles` lo ejecuta cada integrante
+para la demo de permisos y máscaras.

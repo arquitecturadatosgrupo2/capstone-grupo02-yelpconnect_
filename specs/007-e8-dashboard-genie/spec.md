@@ -93,6 +93,8 @@ La Arquitecta necesita que el dashboard y el espacio de preguntas consuman exclu
 - **FR-009**: Ningún visual DEBE exponer datos `confidencial` o `restringido` sin máscara.
 - **FR-010**: El dashboard DEBE publicarse con refresco alineado a la cadencia del job.
 - **FR-011**: Las consultas base DEBEN apuntar a los productos gold que existen realmente (no a ejemplos de la plantilla).
+- **FR-012** *(traído de E6, research R7)*: El dashboard DEBE publicarse **sin credenciales embebidas** (cada espectador ve según sus permisos y máscaras) o con un publicador no autorizado a ver datos sensibles; con credenciales embebidas de un rol autorizado, todos los espectadores verían en claro. Genie usa siempre los permisos del usuario. La página de Gobierno lee `yelp_gov`, que solo leen `steward`, `cdo` y `custodio` (E6 `gov_permiso_rol`).
+- **FR-013** *(traído de E6)*: Tras publicar el dashboard, se completa la captura de linaje «gold → dashboard» de `gld_user_fraud_profile` en `E6_controles_gobierno/img/`.
 
 ### Key Entities
 
