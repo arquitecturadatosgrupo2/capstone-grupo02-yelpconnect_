@@ -1,0 +1,9 @@
+usuario,rol,integrante,vigente_desde
+usuario-cdo@ejemplo.com,cdo,Nombre Apellido,2026-10-29
+usuario-steward@ejemplo.com,steward,Nombre Apellido,2026-10-29
+usuario-producto@ejemplo.com,producto,Nombre Apellido,2026-10-29
+usuario-trust-safety@ejemplo.com,trust_safety,Nombre Apellido,2026-10-29
+usuario-marketing@ejemplo.com,marketing,Nombre Apellido,2026-10-29
+usuario-operaciones@ejemplo.com,operaciones_comerciales,Nombre Apellido,2026-10-29
+usuario-data-science@ejemplo.com,data_science,Nombre Apellido,2026-10-29
+usuario-custodio@ejemplo.com,custodio,Nombre Apellido,2026-10-29

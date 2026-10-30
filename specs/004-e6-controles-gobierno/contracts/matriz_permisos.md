@@ -7,9 +7,9 @@ mantiene para `account users`; todo lo demás se otorga por usuario según esta 
 |---|---|---|---|---|
 | custodio (pipeline) | ALL PRIVILEGES | ALL PRIVILEGES | ALL PRIVILEGES | ALL PRIVILEGES |
 | steward | — | USE SCHEMA, SELECT | USE SCHEMA, SELECT | USE SCHEMA, SELECT, MODIFY |
-| cdo | — | USE SCHEMA, SELECT | USE SCHEMA, SELECT | USE SCHEMA, SELECT |
+| cdo | — | — | USE SCHEMA, SELECT | USE SCHEMA, SELECT |
 | trust_safety | — | USE SCHEMA, SELECT | USE SCHEMA, SELECT | — |
-| data_science | — | USE SCHEMA, SELECT | USE SCHEMA, SELECT | — |
+| data_science | — | — | USE SCHEMA, SELECT | — |
 | producto | — | — | USE SCHEMA, SELECT | — |
 | marketing | — | — | USE SCHEMA, SELECT | — |
 | operaciones_comerciales | — | — | USE SCHEMA, SELECT | — |
@@ -17,6 +17,9 @@ mantiene para `account users`; todo lo demás se otorga por usuario según esta 
 Reglas del contrato:
 
 1. Ningún rol distinto de `custodio` tiene privilegios en `yelp_bronze` (FR-002, SC-002).
+1b. `yelp_silver` es zona restringida: solo la leen roles presentes en `gov_politica_mascara` para
+   `confidencial` y `restringido` (`steward`, `trust_safety`, `custodio`), porque 4 de sus tablas
+   tienen CHECK y no admiten máscara (research R13). CDO y Data Science leen gold.
 2. Los privilegios se otorgan a nivel **schema** (heredan a tablas actuales y futuras); no hay GRANT
    por tabla, salvo el plan B de vistas seguras (research R1).
 3. La reconciliación es diferencial: revoca `otorgados − esperados` antes de otorgar

@@ -162,6 +162,22 @@ Prueba con objetos temporales `tmp_e6_*` en `yelp_gov`, que se borraron al termi
   implementación no depende de ella: el CSV de roles se carga con las filas confirmadas
   (`mateomirandah` → `steward`, `custodio`) y se completa después re-ejecutando E6.
 
+## R13 · Máscaras y restricciones CHECK (2026-10-30)
+
+- **Hallazgo** (primera corrida de E6): `COLUMN_MASKS_FEATURE_NOT_SUPPORTED.CHECK_CONSTRAINT`: Unity
+  Catalog no admite máscaras de columna en tablas con CHECK. 4 de las 6 tablas silver con columnas
+  sensibles los tienen: `slv_fraud_rule` (4 CHECK), `slv_review`, `slv_review_cuarentena`, `slv_user`
+  (8 columnas sensibles en total). La prueba de R11 usó una tabla sin CHECK, por eso no se detectó antes.
+- **Decision** (Steward): **silver como zona restringida**. Solo leen silver los roles autorizados a
+  ver en claro (`steward`, `trust_safety`, `custodio`); CDO y Data Science leen gold. Gold, la capa de
+  consumo, se enmascara completa. Una columna sensible en tabla con CHECK queda «protegida por
+  acceso»: la reconciliación falla si algún rol no autorizado lee su schema, y el validador de
+  cobertura exige que gold no tenga columnas protegidas solo por acceso.
+- **Rationale**: conserva la calidad preventiva de E3/E5 (CHECK) y cumple SC-001 (nadie no autorizado ve
+  el dato en claro).
+- **Alternatives**: quitar los CHECK y enmascarar todo (se pierde la calidad preventiva); vistas
+  seguras con GRANT por tabla en silver (duplica objetos y complica la matriz).
+
 ## R10 · Costo (principio VI)
 
 - Todo E6 es DDL/DCL de metadatos más pocas consultas sobre `information_schema`; sin escaneo de

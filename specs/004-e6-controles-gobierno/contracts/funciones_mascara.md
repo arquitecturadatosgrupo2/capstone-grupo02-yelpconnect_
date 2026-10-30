@@ -37,11 +37,14 @@ ALTER TABLE <tabla> ALTER COLUMN <columna>
   función **falla la ejecución** con el nombre de la columna (no se deja una columna sensible sin
   máscara en silencio, edge case «columna nueva»).
 - Columnas enmascaradas sin la etiqueta sensible → `DROP MASK`.
+- Tabla con restricciones CHECK (no admite máscara, research R13) → la columna queda **protegida
+  por acceso**: si algún rol de `gov_permiso_rol` con SELECT sobre su schema no está en
+  `gov_politica_mascara` para su clasificación, la ejecución falla.
 
 ## Validadores (salida esperada)
 
 | Validador | Pasa si |
 |---|---|
-| Cobertura (SC-003) | columnas sensibles etiquetadas − columnas con máscara = ∅, y viceversa |
+| Cobertura (SC-003) | columnas sensibles etiquetadas − (con máscara ∪ protegidas por acceso) = ∅; máscaras sin etiqueta sensible = ∅; ninguna columna de gold protegida solo por acceso |
 | Comportamiento (SC-001) | para el usuario actual, `fn_autorizado(...)` coincide con su rol en `gov_rol_usuario` y una muestra `LIMIT 5` de cada columna enmascarada es `'****'`/NULL si no está autorizado |
 | Pipeline (R5) | `fn_autorizado` es TRUE para el usuario `custodio` en ambas clasificaciones |

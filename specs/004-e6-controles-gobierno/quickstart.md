@@ -11,14 +11,14 @@
   `E6_controles_gobierno/artefactos/roles_usuarios_PLANTILLA.csv`) subido a
   `/Volumes/workspace/yelp_gov/artefactos/`.
 
-## 1 · Aplicar controles (cuenta del grupo = custodio)
+## 1 · Aplicar controles (con la cuenta custodio, hoy `mateomirandah`, D2)
 
 Ejecutar `E6_controles_gobierno/01_controles_unity_catalog` completo. Esperado:
 
 - Inventario inicial de grants impreso (evidencia «antes»).
 - Tablas `gov_*` creadas y cargadas ([data-model.md](data-model.md)).
 - Tags `capa`/`dominio` en 4 schemas y `dominio`/`data_owner` en tablas silver/gold.
-- 17 columnas con máscara; validador de cobertura ✔ ([contracts/funciones_mascara.md](contracts/funciones_mascara.md)).
+- 17 columnas sensibles: con máscara o, en tablas silver con CHECK, protegidas por acceso (research R13); validador de cobertura ✔ ([contracts/funciones_mascara.md](contracts/funciones_mascara.md)).
 - Validador de permisos: 0 diferencias contra [contracts/matriz_permisos.md](contracts/matriz_permisos.md).
 - Re-ejecutarlo: termina sin errores y sin cambios (idempotencia).
 
