@@ -155,11 +155,59 @@ print(f"✔ Bitácora con {corridas} corrida(s) registrada(s) (la plantilla pide
 # MAGIC | Timeouts por tarea y de corrida, schedule en pausa en `dev` | Una tarea colgada no consume la cuota del día; el desarrollo no dispara corridas programadas. |
 # MAGIC | Escritura con `insertInto` sobre tablas existentes | Evita recrear tablas y reescribir metadata en cada corrida. |
 # MAGIC
-# MAGIC > ✏️ TODO — Estimar el costo mensual del pipeline si corriera en un workspace pagado (DBU serverless × duración
-# MAGIC > de la corrida en la bitácora × 30 corridas) y conectarlo con la arquitectura de referencia del Documento Formal.
+# MAGIC **Estimación de costo enterprise** (celda siguiente): costo mensual = DBU por corrida × precio por DBU ×
+# MAGIC 30 corridas (schedule diario). Los DBU salen de `system.billing.usage` si la cuenta tiene acceso; en Free
+# MAGIC Edition ese schema requiere que un admin de cuenta lo otorgue, así que la celda cae a un supuesto explícito:
+# MAGIC tiempo de cómputo facturable = suma de duraciones de las tareas de la última corrida exitosa en la bitácora
+# MAGIC (serverless factura por tarea, no por cluster encendido) × un rango de DBU por hora de una tarea serverless pequeña.
+# MAGIC Precio de lista de Jobs Serverless en AWS us-east (octubre 2026): USD 0,35/DBU en Premium y 0,45/DBU en
+# MAGIC Enterprise; verificar en la calculadora oficial antes de presupuestar.
+
+# COMMAND ----------
+
+# DBTITLE 1,4. Estimación de costo mensual en un workspace pagado
+PRECIO_DBU = {"Premium": 0.35, "Enterprise": 0.45}   # USD por DBU, Jobs Serverless, AWS us-east, lista oct-2026
+DBU_HORA_SUPUESTO = (2.0, 6.0)                        # rango supuesto de DBU/hora por tarea serverless pequeña
+CORRIDAS_MES = 30
+
+ultima = spark.sql(f"""
+  SELECT job_run_id, count(*) AS tareas, sum(duracion_seg) AS seg_computo
+  FROM {destino}
+  WHERE job_run_id RLIKE '^[0-9]+$'
+  GROUP BY job_run_id
+  HAVING count_if(estado <> 'SUCCESS') = 0
+  ORDER BY max(ejecucion_ts) DESC LIMIT 1
+""").first()
+horas = ultima.seg_computo / 3600
+
+try:
+    dbu_corrida = spark.sql(f"""SELECT sum(usage_quantity) FROM system.billing.usage
+                                WHERE usage_metadata.job_run_id = '{ultima.job_run_id}'""").first()[0]
+    fuente = "system.billing.usage (DBU reales)"
+    rango = (dbu_corrida, dbu_corrida)
+except Exception:
+    fuente = f"supuesto {DBU_HORA_SUPUESTO[0]:g}–{DBU_HORA_SUPUESTO[1]:g} DBU/h (sin acceso a system.billing)"
+    rango = (horas * DBU_HORA_SUPUESTO[0], horas * DBU_HORA_SUPUESTO[1])
+
+print(f"Última corrida exitosa {ultima.job_run_id}: {ultima.tareas} tareas, {horas:.2f} h de cómputo facturable")
+print(f"DBU por corrida: {rango[0]:.2f}–{rango[1]:.2f} · fuente: {fuente}")
+for nivel, precio in PRECIO_DBU.items():
+    print(f"  {nivel:<10} USD {rango[0] * precio * CORRIDAS_MES:,.2f} – {rango[1] * precio * CORRIDAS_MES:,.2f} al mes "
+          f"({CORRIDAS_MES} corridas)")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC **Lectura del resultado:** con la muestra de una ciudad, las corridas exitosas suman entre 0,1 y 0,25 horas
+# MAGIC de cómputo, así que el pipeline diario cuesta unos pocos dólares al mes en un workspace pagado (con los
+# MAGIC supuestos de DBU/hora; el valor real requiere `system.billing`). El costo escala casi linealmente con el volumen: el dataset completo
+# MAGIC (varias veces la muestra) y más ciudades multiplican el cómputo de bronze y silver, que es la mayor parte de la
+# MAGIC duración. Las palancas de la tabla de arriba (Auto Loader incremental, schedule diario y no continuo,
+# MAGIC timeouts) son las que mantienen el costo proporcional a los datos nuevos y no al histórico.
 # MAGIC
 # MAGIC ### Definition of Done (E7.4)
-# MAGIC - [ ] Job multi-tarea operativo con retries, timeout y alertas (capturas).
-# MAGIC - [ ] Evidencia del gate de calidad deteniendo una corrida.
-# MAGIC - [ ] Bitácora poblada con ≥3 corridas.
-# MAGIC - [ ] Análisis FinOps con estimación de costo enterprise.
+# MAGIC - [x] Job multi-tarea operativo con retries, timeout y alertas (definido en el bundle). Faltan las capturas.
+# MAGIC - [x] Evidencia del gate de calidad deteniendo una corrida: en la bitácora, corrida `710328375413952` con
+# MAGIC   `DQ_gate` FAILED y las 4 tareas gold en `UPSTREAM_FAILED`. Falta la captura.
+# MAGIC - [x] Bitácora poblada con ≥3 corridas.
+# MAGIC - [x] Análisis FinOps con estimación de costo enterprise (con supuesto de DBU/hora hasta tener acceso a `system.billing`).

@@ -178,6 +178,6 @@ print("Tags de clasificación aplicados ✔ (insumo directo de E6)")
 # MAGIC - [x] Todo elemento con responsable, clasificación de sensibilidad y política de retención.
 # MAGIC - [x] Toda regla citada como `DQ-nnn` existe en `yelp_gov.dq_reglas` (sin huérfanas).
 # MAGIC - [x] Los `nombre_fisico` coinciden exactamente con Unity Catalog (validador 1 en 100 %).
-# MAGIC - [ ] Tags de clasificación aplicados y visibles en el catálogo.
+# MAGIC - [x] Tags de clasificación aplicados y visibles en el catálogo (152 columnas; E6 los usa para máscaras y acceso).
 # MAGIC - [x] Hoja "Diccionario resumido" coherente con la hoja completa (es la de la sustentación).
 # MAGIC - [ ] Párrafo de reflexión: ¿qué se hereda del catálogo y qué debe negociarse con el negocio?

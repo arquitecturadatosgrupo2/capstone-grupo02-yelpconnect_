@@ -73,6 +73,6 @@ print(f"✔ {DESTINO}: {r.filas:,} filas · PK única")
 # MAGIC   la carga falla: decidir con el Data Owner si se ajusta el CHECK o se envía a cuarentena, y documentarlo.
 # MAGIC
 # MAGIC ### Definition of Done (slv_user)
-# MAGIC - [ ] Corre de inicio a fin sobre la muestra y la validación pasa.
-# MAGIC - [ ] `nombre` clasificado como PII en el diccionario y con tag aplicado (E4/E6).
+# MAGIC - [x] Corre de inicio a fin sobre la muestra y la validación pasa.
+# MAGIC - [x] `nombre` clasificado como confidencial en el diccionario, con tag (E4) y máscara (E6).
 # MAGIC - [x] Origen `brz_user` con metadata de auditoría (E7.1).

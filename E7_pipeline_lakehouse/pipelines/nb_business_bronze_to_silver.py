@@ -70,6 +70,6 @@ print(f"✔ {DESTINO}: {r.filas:,} filas · PK única")
 # MAGIC - `chk_estrellas` (1.0 a 5.0) es enforzada: si llega un rating fuera de rango la carga falla en vez de propagarlo.
 # MAGIC
 # MAGIC ### Definition of Done (slv_business)
-# MAGIC - [ ] Corre de inicio a fin sobre la muestra y la validación pasa.
-# MAGIC - [ ] Columnas y tipos idénticos al DDL de E3.
+# MAGIC - [x] Corre de inicio a fin sobre la muestra y la validación pasa.
+# MAGIC - [x] Columnas y tipos idénticos al DDL de E3.
 # MAGIC - [x] Origen `brz_business` con metadata de auditoría (E7.1).

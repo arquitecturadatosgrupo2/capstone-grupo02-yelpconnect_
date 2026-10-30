@@ -67,6 +67,6 @@ print(f"✔ {DESTINO}: {r.filas:,} filas · PK única")
 # MAGIC   consideran duplicados y se conservan una sola vez.
 # MAGIC
 # MAGIC ### Definition of Done (slv_tip)
-# MAGIC - [ ] Corre de inicio a fin sobre la muestra y la validación pasa.
+# MAGIC - [x] Corre de inicio a fin sobre la muestra y la validación pasa.
 # MAGIC - [ ] Decisión de llave sustituta reflejada en el modelo lógico del Documento Formal.
 # MAGIC - [x] Origen `brz_tip` con metadata de auditoría (E7.1).

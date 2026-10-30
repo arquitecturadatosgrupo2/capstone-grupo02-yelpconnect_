@@ -75,6 +75,6 @@ print(f"✔ {DESTINO}: {r.filas:,} check-ins en {r.negocios:,} negocios · PK ú
 # MAGIC - Fechas que no parsean se descartan; su volumen debe medirse con una regla DQ de validez.
 # MAGIC
 # MAGIC ### Definition of Done (slv_checkin)
-# MAGIC - [ ] Corre de inicio a fin sobre la muestra y la validación pasa.
-# MAGIC - [ ] Definición de «check-in válido» del glosario coherente con este grano.
+# MAGIC - [x] Corre de inicio a fin sobre la muestra y la validación pasa.
+# MAGIC - [x] Definición de «check-in válido» del glosario coherente con este grano.
 # MAGIC - [x] Origen `brz_checkin` con metadata de auditoría (E7.1).

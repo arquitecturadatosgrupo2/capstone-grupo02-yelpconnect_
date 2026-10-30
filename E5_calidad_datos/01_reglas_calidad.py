@@ -257,6 +257,6 @@ print("✔ Gate de calidad superado")
 # MAGIC
 # MAGIC ### Definition of Done (E5)
 # MAGIC - [x] ≥12 reglas en las 6 dimensiones, con criticidad y umbral justificados (19 reglas).
-# MAGIC - [ ] Motor ejecutado con historial en `dq_resultados` (≥2 corridas en fechas distintas).
+# MAGIC - [x] Motor ejecutado con historial en `dq_resultados` (≥2 corridas en fechas distintas: 2026-10-23 y 2026-10-30).
 # MAGIC - [x] Para cada regla FALLIDA: decisión documentada (`accion_si_falla`, `data_owner`); falta la firma real del Data Owner.
 # MAGIC - [x] Bonus: constraint `CHECK` en el pipeline para las reglas más críticas (calidad *preventiva* vs *detectiva*).

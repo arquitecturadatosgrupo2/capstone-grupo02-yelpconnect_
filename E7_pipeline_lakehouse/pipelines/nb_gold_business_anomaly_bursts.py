@@ -133,6 +133,6 @@ print(f"✔ {DESTINO}: {r.filas:,} negocio-día · PK única · {r.rafagas:,} r�
 # MAGIC - `reglas_activadas` guarda qué reglas se cumplieron en cada negocio-día (linaje regla → caso).
 # MAGIC
 # MAGIC ### Definition of Done (gld_business_anomaly_bursts)
-# MAGIC - [ ] Corre de inicio a fin y la validación pasa.
+# MAGIC - [x] Corre de inicio a fin y la validación pasa.
 # MAGIC - [ ] Umbrales de ráfaga aprobados por el Data Owner (Trust & Safety).
 # MAGIC - [ ] Pregunta de negocio registrada en la sección 7 del Documento Formal y visual asociado en E8.

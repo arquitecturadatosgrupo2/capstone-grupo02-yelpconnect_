@@ -87,7 +87,7 @@ print(f"✔ {DESTINO}: {r.filas} reglas ({r.activas} activas) · PK única · eq
 # MAGIC   Este notebook depende de que `slv_trust_safety_area` esté cargada.
 # MAGIC
 # MAGIC ### Definition of Done (slv_fraud_rule)
-# MAGIC - [ ] Corre de inicio a fin sobre la muestra y la validación pasa.
+# MAGIC - [x] Corre de inicio a fin sobre la muestra y la validación pasa.
 # MAGIC - [ ] Umbrales y puntos aprobados por Trust & Safety y registrados en el Documento Formal.
-# MAGIC - [ ] Origen de la fuente simulada documentado (sistema fuente en el diccionario).
+# MAGIC - [x] Origen de la fuente simulada documentado (sistema fuente en el diccionario).
 # MAGIC - [x] Origen `brz_fraud_rule` con metadata de auditoría (E7.1).
