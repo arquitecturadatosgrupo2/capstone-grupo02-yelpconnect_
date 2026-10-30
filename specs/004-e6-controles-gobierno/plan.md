@@ -96,15 +96,16 @@ specs/007-e8-dashboard-genie/spec.md  # + requisito de publicación sin credenci
 **Structure Decision**: se mantiene la estructura por entregable del repo; E6 queda en su carpeta con un
 notebook de controles (custodio) y uno de demo (cualquier integrante). No se modifica el job del bundle.
 
-## Riesgos y verificación temprana (T0)
+## Riesgos y verificación temprana (verificados 2026-10-29, research R11–R12)
 
-| Riesgo | Si se confirma |
+| Riesgo | Resultado |
 |---|---|
-| `SET MASK` no disponible en Free Edition | Plan B: vistas `vw_*` en gold/silver + REVOKE en tablas base (research R1) |
-| `information_schema.column_masks` ausente | Validador de cobertura con `DESCRIBE TABLE EXTENDED` |
-| Grants amplios heredados para `account users` | Revocarlos en la reconciliación; documentar «antes/después» |
-| Integrantes con admin del workspace | Quitar admin para la demo o documentarlo como limitación |
-| Máscara con subconsulta exige SELECT en `gov_*` al consultante | Otorgar `SELECT` en `gov_rol_usuario`/`gov_politica_mascara` a todos los roles con acceso, o volver la tabla de mapeo una función de valores fijos |
+| `SET MASK` no disponible en Free Edition | ✅ Funciona con tabla de mapeo + `current_user()`; plan B descartado |
+| `information_schema.column_masks` ausente | ✅ Existe; es la base del validador de cobertura |
+| Grants amplios heredados | ⚠️ `account users` con SELECT en silver y USE SCHEMA en bronze, más grants ad hoc por integrante → la reconciliación los revoca y deja evidencia «antes/después» |
+| Integrantes con admin del workspace | ⚠️ Los 6 son admins (dueños del catálogo). Decisión: no se tocan; limitación documentada; demo de acceso denegado con la cuenta no admin si el grupo acepta |
+| Custodio = cuenta personal | Decisión: se mantiene `mateomirandah` (steward + custodio) |
+| Máscara con subconsulta exige SELECT en `gov_*` al consultante | Pendiente: verificar con un usuario no admin; si aplica, otorgar SELECT en `gov_rol_usuario`/`gov_politica_mascara` a los roles de lectura |
 
 ## Complexity Tracking
 

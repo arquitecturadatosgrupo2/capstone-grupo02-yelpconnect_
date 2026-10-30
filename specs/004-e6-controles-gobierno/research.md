@@ -6,8 +6,7 @@ Insumos revisados: spec, constitución v1.0.0, diccionario E4
 (`E4_diccionario_glosario/artefactos/Diccionario_de_Datos_YelpConnect.xlsx`), DDL de E3, notebooks
 de pipeline (`E7_pipeline_lakehouse/pipelines/`) y job del bundle.
 
-> El perfil CLI `FREE` tiene el token vencido (2026-10-29): los puntos marcados **[verificar en
-> workspace]** se confirman en la tarea T0 de inventario antes de aplicar controles.
+> Los puntos marcados **[verificar en workspace]** se verificaron el 2026-10-29 (ver R11).
 
 ---
 
@@ -74,7 +73,7 @@ El diccionario marca 17 columnas sensibles (10 `confidencial`, 7 `restringido`):
 | Operaciones Comerciales | Cesar Loli |
 | Marketing | Rey Ventocilla |
 | Data Science | sin integrante (permisos definidos, no otorgados) |
-| Custodio (pipeline) | cuenta del grupo que despliega el job |
+| Custodio (pipeline) | `mateomirandah` (ver R12) |
 
 - **Alternatives**: grupos locales del workspace — no son utilizables en GRANT de Unity Catalog
   (solo grupos de cuenta) → descartado.
@@ -124,6 +123,40 @@ El diccionario marca 17 columnas sensibles (10 `confidencial`, 7 `restringido`):
 - **Decision**: schemas con `capa` (`bronze|silver|gold|gobierno`) y `dominio` = `yelpconnect`; tablas
   silver/gold con `dominio` (tema de datos del diccionario) y `data_owner` (Producto | Trust & Safety |
   CDO, según constitución IV). Valores sin tildes, como `clasificacion`.
+
+## R11 · Inventario del workspace (2026-10-29)
+
+Prueba con objetos temporales `tmp_e6_*` en `yelp_gov`, que se borraron al terminar:
+
+- ✅ `SET MASK … USING COLUMNS ('confidencial')` funciona; la función con `EXISTS` sobre una tabla de
+  mapeo y `current_user()` enmascara y desenmascara según la fila del mapa. Plan B de vistas descartado.
+- ✅ `information_schema.column_masks` existe (columnas `mask_name`, `using_columns`).
+- ✅ La máscara persiste tras `INSERT OVERWRITE`.
+- ⚠️ **Todos los integrantes son admins del workspace** y el catálogo `workspace` es propiedad del
+  grupo `_workspace_admins_…` → como dueños del catálogo, los admins leen todo y **el acceso denegado
+  no se puede demostrar** con ellos. Las máscaras sí aplican a admins.
+- ⚠️ Privilegios ad hoc que contradicen la matriz: `account users` tiene `SELECT` en `yelp_silver` y
+  `USE SCHEMA` en `yelp_bronze`; varios integrantes tienen `SELECT` en bronze o `CREATE_TABLE`/`MODIFY`
+  en silver y gold; `mateomirandah` tiene privilegios a nivel de catálogo.
+- ⚠️ El job `Capstone_YELP` (dev y prod) corre como `mateomirandah@gmail.com` (creador, sin `run_as`),
+  que además es dueño de 26 tablas; la cuenta del grupo `arquitecturadatos.grupo2@gmail.com` es
+  dueña de los 4 schemas. El custodio efectivo hoy es una cuenta personal.
+- ⚠️ Usuarios del workspace: freddychicoma y freddy.chicomar@softtek.com (dos cuentas), cesarlg03,
+  ingventocilla, mateomirandah, gmendozatello, arquitecturadatos.grupo2. **Yovani Pahuara no está
+  invitado.**
+
+## R12 · Decisiones del Steward (2026-10-29)
+
+- **Admins**: no se modifican. Los admins conservan acceso total vía propiedad del catálogo; se
+  documenta como limitación (FR-009). Los GRANT se reconcilian igual contra la matriz (SC-002 mide lo
+  otorgado, no lo efectivo para admins). La única cuenta no admin (`freddy.chicomar@softtek.com`) puede
+  actuar el rol de consumo en la demo del acceso denegado, si el grupo lo acepta.
+- **Custodio**: `mateomirandah@gmail.com` (status quo: corre el job y es dueño de las tablas). Mateo
+  tiene **dos roles** (`steward` + `custodio`) → `gov_rol_usuario` admite varios roles por usuario.
+- **Ver en claro**: `steward`, `trust_safety` y `custodio` para `confidencial` y `restringido`.
+- **Asignación de integrantes**: pendiente (Yovani no invitado; Freddy con dos cuentas). La
+  implementación no depende de ella: el CSV de roles se carga con las filas confirmadas
+  (`mateomirandah` → `steward`, `custodio`) y se completa después re-ejecutando E6.
 
 ## R10 · Costo (principio VI)
 

@@ -22,12 +22,14 @@ Asignación rol ↔ identidad (simula grupos). Origen: `roles_usuarios.csv` en e
 
 | Columna | Tipo | Nulo | Descripción |
 |---|---|---|---|
-| usuario | STRING | NO (PK) | Correo del usuario en el workspace |
-| rol | STRING | NO (FK → gov_rol) | Un rol por usuario (edge case «cambio de rol»: se reemplaza la fila y la reconciliación revoca lo anterior) |
+| usuario | STRING | NO | Correo del usuario en el workspace |
+| rol | STRING | NO (FK → gov_rol) | Rol que actúa (edge case «cambio de rol»: se reemplaza la fila y la reconciliación revoca lo anterior) |
 | integrante | STRING | SÍ | Nombre del integrante que actúa el rol |
 | vigente_desde | DATE | NO | Fecha de asignación |
 
-**Validación**: un usuario = un rol; todo `rol` existe en `gov_rol`; el rol `custodio` tiene exactamente 1 usuario.
+PK lógica: (usuario, rol). Un usuario puede tener varios roles (Mateo: `steward` + `custodio`, research R12).
+
+**Validación**: todo `rol` existe en `gov_rol`; el rol `custodio` tiene exactamente 1 usuario y es la identidad que ejecuta el job.
 
 ## gov_permiso_rol
 

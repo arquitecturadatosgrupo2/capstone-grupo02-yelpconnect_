@@ -5,7 +5,8 @@
 - Perfil CLI `FREE` autenticado (`databricks auth login --profile FREE`) con el CLI de la extensión
   de VS Code.
 - E3, E4 (tags `clasificacion` aplicados) y al menos una corrida completa del job en `main`.
-- Los integrantes invitados al workspace, **sin** rol de admin.
+- Los integrantes invitados al workspace. Los 6 son admins (decisión: no se modifica, research R12):
+  la demo de acceso denegado requiere un usuario no admin (p. ej. `freddy.chicomar@softtek.com`).
 - `roles_usuarios.csv` (copia completada de
   `E6_controles_gobierno/artefactos/roles_usuarios_PLANTILLA.csv`) subido a
   `/Volumes/workspace/yelp_gov/artefactos/`.
