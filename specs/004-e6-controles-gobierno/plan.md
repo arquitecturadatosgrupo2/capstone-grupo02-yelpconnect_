@@ -107,6 +107,22 @@ notebook de controles (custodio) y uno de demo (cualquier integrante). No se mod
 | Custodio = cuenta personal | Decisión: se mantiene `mateomirandah` (steward + custodio) |
 | Máscara con subconsulta exige SELECT en `gov_*` al consultante | Pendiente: verificar con un usuario no admin; si aplica, otorgar SELECT en `gov_rol_usuario`/`gov_politica_mascara` a los roles de lectura |
 
+## Decisiones diferidas (revisar al cierre del proyecto)
+
+Decisiones de acceso tomadas el 2026-10-29 como **provisionales** (research R12). Se revisan cuando
+todo el proyecto esté listo en `main`, antes de la sustentación. El diseño basado en datos permite
+cambiarlas editando las tablas `gov_*` o el CSV de roles y volviendo a ejecutar E6, sin reescribir controles.
+
+| # | Decisión provisional | Cambio previsto al cierre | Dónde se aplica |
+|---|---|---|---|
+| D1 | Los 6 integrantes siguen como admins del workspace | Quitar admin a quienes no despliegan, para que el acceso denegado sea efectivo | Configuración del workspace (manual) + re-ejecutar la demo |
+| D2 | Custodio = `mateomirandah` (corre el job, dueño de 26 tablas, además es Steward) | Custodio = cuenta del grupo: `run_as` en el bundle + transferir la propiedad de tablas | `resources/capstone_yelp.job.yml`, `ALTER TABLE … OWNER TO`, `gov_rol_usuario` |
+| D3 | Asignación integrante ↔ rol incompleta (Yovani no invitado; Freddy con 2 cuentas) | Completar `roles_usuarios.csv` y depurar la cuenta duplicada | CSV en el volumen de artefactos |
+| D4 | Ven en claro: `steward`, `trust_safety`, `custodio` | Ratificar con los Data Owners | `gov_politica_mascara` |
+
+Mientras estén pendientes, la sección 5 del Documento Formal y el notebook E6 las presentan como
+limitaciones conocidas (FR-009), no como diseño final.
+
 ## Complexity Tracking
 
 Sin violaciones de la constitución que justificar.

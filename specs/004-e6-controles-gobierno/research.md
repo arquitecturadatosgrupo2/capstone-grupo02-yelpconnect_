@@ -145,7 +145,11 @@ Prueba con objetos temporales `tmp_e6_*` en `yelp_gov`, que se borraron al termi
   ingventocilla, mateomirandah, gmendozatello, arquitecturadatos.grupo2. **Yovani Pahuara no está
   invitado.**
 
-## R12 · Decisiones del Steward (2026-10-29)
+## R12 · Decisiones del Steward (2026-10-29) — PROVISIONALES
+
+> Estas decisiones de acceso son **provisionales**: se toman para no frenar el trabajo del grupo
+> mientras el proyecto está en construcción y se **revisan al cierre del proyecto** (cuando E3–E8 y
+> EX estén en `main`), antes de la sustentación. Ver «Decisiones diferidas» en [plan.md](plan.md).
 
 - **Admins**: no se modifican. Los admins conservan acceso total vía propiedad del catálogo; se
   documenta como limitación (FR-009). Los GRANT se reconcilian igual contra la matriz (SC-002 mide lo
