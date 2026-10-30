@@ -40,7 +40,7 @@ description: "Lista de tareas de E8 · Dashboard BI y Genie"
 
 - [X] T010 Programación de refresco diaria 07:00 America/Lima, en pausa en dev (FR-010), documentada en el notebook — *Decisión: el dashboard lee en vivo; la programación solo calienta la caché, documentada y no creada.*
 - [X] T011 Definition of Done y decisiones en `01_consultas_base_dashboard.py`; marcar en los notebooks de gold los checklists «visual asociado en E8»
-- [ ] T012 Commit, push y PR de `feature/E8-dashboard-genie`
+- [X] T012 Commit, push y PR de `feature/E8-dashboard-genie`
 
 ## Dependencies
 
