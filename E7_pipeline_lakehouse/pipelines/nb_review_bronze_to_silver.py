@@ -147,7 +147,7 @@ print(f"  {r.autor_fuera_muestra:,} reseñas en silver con autor fuera de la mue
 # MAGIC - Depende de `slv_business` y `slv_user`, que deben cargarse antes en el job.
 # MAGIC
 # MAGIC ### Definition of Done (slv_review)
-# MAGIC - [ ] Corre de inicio a fin sobre la muestra y la validación pasa.
+# MAGIC - [x] Corre de inicio a fin sobre la muestra y la validación pasa.
 # MAGIC - [x] Criterio de duplicados lógicos documentado + tabla de cuarentena operativa.
 # MAGIC - [ ] Regla DQ de integridad de autor registrada en E5 con la aceptación del Data Owner.
 # MAGIC - [x] Origen `brz_review` alimentada con Auto Loader (E7.1 / M7).

@@ -146,6 +146,6 @@ print(f"✔ {DESTINO}: {r.filas:,} usuarios · PK única · distribución de rie
 # MAGIC   (cuentas de menos de 30 días) prácticamente no se activa. Alternativa a evaluar: medirla a la fecha de la reseña.
 # MAGIC
 # MAGIC ### Definition of Done (gld_user_fraud_profile)
-# MAGIC - [ ] Corre de inicio a fin y la validación pasa.
+# MAGIC - [x] Corre de inicio a fin y la validación pasa.
 # MAGIC - [ ] Pesos del score y cortes de clasificación aprobados por el Data Owner (Trust & Safety).
 # MAGIC - [ ] Pregunta de negocio registrada en la sección 7 del Documento Formal y visual asociado en E8.

@@ -64,6 +64,6 @@ print(f"✔ {DESTINO}: {r.filas:,} filas · PK única")
 # MAGIC - Fuente simulada: documentar en el Documento Formal y en el diccionario quién la genera y con qué supuestos.
 # MAGIC
 # MAGIC ### Definition of Done (slv_trust_safety_area)
-# MAGIC - [ ] Corre de inicio a fin sobre la muestra y la validación pasa.
-# MAGIC - [ ] Origen de la fuente simulada documentado (sistema fuente en el diccionario).
+# MAGIC - [x] Corre de inicio a fin sobre la muestra y la validación pasa.
+# MAGIC - [x] Origen de la fuente simulada documentado (sistema fuente en el diccionario).
 # MAGIC - [x] Origen `brz_trust_safety_area` con metadata de auditoría (E7.1).

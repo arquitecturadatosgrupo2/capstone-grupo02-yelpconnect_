@@ -182,6 +182,6 @@ print(f"✔ Esquema estrella válido · {conteos} · {n_inferidos:,} usuarios in
 # MAGIC - `categoria_principal` = primera categoría declarada por el negocio; es una simplificación para agrupar en BI.
 # MAGIC
 # MAGIC ### Definition of Done (esquema estrella)
-# MAGIC - [ ] Corre de inicio a fin y la validación (PK + integridad referencial) pasa.
+# MAGIC - [x] Corre de inicio a fin y la validación (PK + integridad referencial) pasa.
 # MAGIC - [ ] Estrategia dimensional (grano, SCD, claves) reflejada en la sección 4 del Documento Formal.
 # MAGIC - [ ] Lineage silver → gold visible en Catalog Explorer (captura en `img/`).

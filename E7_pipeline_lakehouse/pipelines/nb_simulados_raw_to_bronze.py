@@ -66,6 +66,6 @@ for archivo, (tabla, _) in FUENTES.items():
 # MAGIC   estandariza y así se evidencia la regla de transformación del mapeo.
 # MAGIC
 # MAGIC ### Definition of Done (bronze simulados)
-# MAGIC - [ ] Semillas subidas a `raw/semillas/` y validación en verde.
-# MAGIC - [ ] Origen simulado declarado como «sistema fuente» en el diccionario de datos (E4).
+# MAGIC - [x] Semillas subidas a `raw/semillas/` y validación en verde.
+# MAGIC - [x] Origen simulado declarado como «sistema fuente» en el diccionario de datos (E4).
 # MAGIC - [x] Tablas con nombres `brz_fraud_rule` y `brz_trust_safety_area` (convención).

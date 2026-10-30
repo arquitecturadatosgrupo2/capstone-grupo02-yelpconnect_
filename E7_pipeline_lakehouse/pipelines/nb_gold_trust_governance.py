@@ -103,6 +103,6 @@ for x in df.filter("alerta_gobierno IS NOT NULL").orderBy("fraud_rule_id").colle
 # MAGIC   nueva, hay que agregarla en ambos lugares.
 # MAGIC
 # MAGIC ### Definition of Done (gld_trust_governance)
-# MAGIC - [ ] Corre de inicio a fin y la validación pasa.
+# MAGIC - [x] Corre de inicio a fin y la validación pasa.
 # MAGIC - [ ] Alertas de gobierno revisadas con Trust & Safety y decisión registrada.
 # MAGIC - [ ] Visual asociado en la página de gobierno del dashboard (E8).
