@@ -9,7 +9,7 @@
 Convertir la estrategia de gobierno (sección 5 del Documento Formal) en controles efectivos de
 Unity Catalog sobre las capas ya construidas: permisos de mínimo privilegio por rol simulado,
 máscaras de columna derivadas de la etiqueta `clasificacion` de E4, etiquetas de capa/dominio/owner,
-RACI como tabla y evidencia de linaje. Sin grupos de cuenta en Free Edition, los roles se modelan
+RACI en la tabla existente `matriz_raci` y evidencia de linaje. Sin grupos de cuenta en Free Edition, los roles se modelan
 como **datos** (`yelp_gov.gov_rol_usuario`) y GRANT y máscaras se **reconcilian** desde esas tablas,
 de forma idempotente. Detalle de decisiones en [research.md](research.md).
 
@@ -42,7 +42,7 @@ de forma idempotente. Detalle de decisiones en [research.md](research.md).
 | I. Documento define, plataforma demuestra | Notebook abre con Trazabilidad → sección 5. Limitaciones de Free Edition (sin grupos, sin ABAC) registradas como decisiones en el notebook **y** en la sección 5 (FR-009) | ✅ |
 | II. Convenciones del Lakehouse | Solo objetos en `yelp_gov` (tablas `gov_*`, funciones `fn_*`); plan B de vistas usa `vw_`. Sin schemas nuevos. Gold no lee bronze. COMMENT en español | ✅ (ver nota 1) |
 | III. Calidad como datos y gate | E6 no toca `dq_reglas`. Riesgo R5: máscaras podrían degradar silenciosamente el input de gold y del `DQ_gate` → mitigado autorizando `custodio` y con validador post-corrida | ✅ con mitigación |
-| IV. Gobierno por diseño | Tags `clasificacion` de E4 **gobiernan** las máscaras (reconciliación); `data_owner` de tablas y `gov_matriz_raci` alineados con los Data Owners de la constitución; tablas `gov_*` entran al diccionario | ✅ (ver nota 2) |
+| IV. Gobierno por diseño | Tags `clasificacion` de E4 **gobiernan** las máscaras (reconciliación); `data_owner` de tablas y `matriz_raci` alineados con los Data Owners de la constitución; tablas `gov_*` entran al diccionario | ✅ (ver nota 2) |
 | V. Reproducibilidad e idempotencia | `CREATE … IF NOT EXISTS`, `CREATE OR REPLACE FUNCTION`, reconciliación diferencial de GRANT/máscaras; paso manual del CSV de roles documentado en quickstart y README | ✅ |
 | VI. Frugalidad | Solo metadatos; consultas de evidencia con `LIMIT`; E6 no se suma al job | ✅ |
 | VII. Operación observable | E6 no agrega tareas al job; sí registra su ejecución en `pipeline_bitacora` (tarea `E6_controles`) para dejar rastro de cambios de permisos | ✅ |

@@ -50,5 +50,5 @@ dashboard para mostrar el salto a la visualización.
 ## 5 · Cierre
 
 - Marcar el Definition of Done del notebook.
-- Actualizar la sección 5 del Documento Formal: RACI (= `gov_matriz_raci`), Data Owners
+- Actualizar la sección 5 del Documento Formal: RACI (= `matriz_raci`), Data Owners
   (2026-10-23) y limitaciones de Free Edition (FR-009).

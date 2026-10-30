@@ -1,6 +1,6 @@
 # Data Model · E6 Controles técnicos de gobierno
 
-Todas las tablas viven en `workspace.yelp_gov`, sin prefijo de capa (el schema de gobierno
+Todas las tablas viven en `workspace.yelp_gov` (el schema de gobierno
 sigue el estilo de `dq_reglas`, `pipeline_bitacora`, `diccionario_datos`). Creación con
 `CREATE TABLE IF NOT EXISTS` + `COMMENT` en tabla y columnas; carga con overwrite controlado
 (idempotente, FR-007). Data Owner de todas: CDO (Laura Hernández).
@@ -58,20 +58,41 @@ Clasificación → roles que ven en claro.
 Contenido inicial: `confidencial` → `steward`, `trust_safety`, `custodio`; `restringido` →
 `steward`, `trust_safety`, `custodio`. (`custodio` es obligatorio: ver research R5).
 
-## gov_matriz_raci
+## gov_inventario_permisos
 
-RACI consultable (FR-008), alimenta el indicador de ownership de E8.
+Evidencia «antes/después» de los permisos (FR-006). Solo se agregan filas (append).
 
 | Columna | Tipo | Nulo | Descripción |
 |---|---|---|---|
-| entidad | STRING | NO | Negocio, Usuario, Reseña, Tip, Check-in, Reglas de fraude, Equipos T&S, Productos de riesgo, Fecha, Gobierno/Calidad |
-| rol | STRING | NO (FK) | |
-| responsabilidad | STRING | NO | `R` · `A` · `C` · `I` |
-| tablas | ARRAY<STRING> | SÍ | Tablas silver/gold de la entidad |
+| capturado_ts | TIMESTAMP | NO | Momento de la captura |
+| momento | STRING | NO | `antes` · `despues` |
+| grantee | STRING | NO | Usuario o grupo |
+| objeto | STRING | NO | Catálogo o schema |
+| privilegio | STRING | NO | Privilegio de UC |
 
-**Validación**: exactamente una `A` por entidad, y el rol `A` coincide con el Data Owner de la
-constitución IV (Producto → Negocio/Usuario/Check-in; Trust & Safety → Reseña/Tip/fraude/equipos/
-riesgo; CDO → Fecha y gobierno) y con el tag `data_owner` de sus tablas.
+## matriz_raci (tabla existente, la llena E6)
+
+RACI consultable (FR-008). **Ya existe**: la crea `00_setup/00_configurar_lakehouse.py` (vacía al
+2026-10-29) y E8 la consulta (`entidades_con_owner`). E6 no crea una tabla nueva: la carga con
+overwrite controlado. Formato ancho, una fila por entidad:
+
+| Columna | Tipo | RACI | Contenido |
+|---|---|---|---|
+| entidad | STRING | — | `negocio`, `usuario`, `resena`, `tip`, `checkin`, `regla_fraude`, `equipo_trust_safety`, `producto_riesgo`, `fecha`, `gobierno_calidad` (10 filas) |
+| dominio | STRING | — | Dominio / tema de datos del diccionario |
+| data_owner | STRING | **A** | Rol (`gov_rol.rol`): Producto → negocio/usuario/checkin; Trust & Safety → resena/tip/regla_fraude/equipo_trust_safety/producto_riesgo; CDO → fecha/gobierno_calidad |
+| data_steward | STRING | **R** (gobierno) | `steward` |
+| data_custodian | STRING | **R** (técnico) | `custodio` |
+| consumidores | STRING | **I** | Roles separados por coma, coherentes con [matriz_permisos.md](contracts/matriz_permisos.md) |
+| clasificacion | STRING | — | Máxima clasificación de las columnas de la entidad: `publico\|interno\|confidencial\|restringido` |
+
+Ajuste en 00_setup: el `COMMENT` de `clasificacion` dice `publica|interna|confidencial|pii`; se
+corrige a los valores de E4 (`publico|interno|confidencial|restringido`) y se agregan COMMENT a
+`dominio`, `data_steward` y `data_custodian`, y a la tabla en vivo con `ALTER … COMMENT`.
+
+**Validación**: 10 entidades, ninguna con `data_owner` NULL; `data_owner` coincide con el tag
+`data_owner` de las tablas de la entidad; `clasificacion` = la máxima de sus columnas según
+`column_tags`.
 
 ## Objetos no tabulares
 
@@ -89,7 +110,7 @@ riesgo; CDO → Fecha y gobierno) y con el tag `data_owner` de sus tablas.
 gov_rol 1─* gov_rol_usuario
 gov_rol 1─* gov_permiso_rol ──► GRANT por usuario (gov_rol_usuario × gov_permiso_rol)
 gov_rol 1─* gov_politica_mascara ──► fn_autorizado ──► fn_mascara_* ──► SET MASK
-gov_rol 1─* gov_matriz_raci
+gov_rol 1─* matriz_raci (data_owner, data_steward, data_custodian)
 column_tags(clasificacion) ──► reconciliación de máscaras
 ```
 
