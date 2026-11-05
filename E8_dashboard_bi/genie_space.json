@@ -1,0 +1,235 @@
+{
+  "title": "YelpConnect · Trust & Safety y Gobierno",
+  "description": "Preguntas en lenguaje natural sobre los productos gold y de gobierno de YelpConnect, con el vocabulario del glosario (E8, REQ-11).",
+  "serialized_space": {
+    "version": 2,
+    "config": {
+      "sample_questions": [
+        {
+          "id": "1eba42579fc6db14830c475966516222",
+          "question": [
+            "¿Qué negocios tuvieron más picos de reseñas sospechosos en 2021?"
+          ]
+        },
+        {
+          "id": "73959e9777bc7b8a4649e307e30f17ed",
+          "question": [
+            "¿Cuál fue el conteo oficial de check-ins por categoría en diciembre de 2021?"
+          ]
+        },
+        {
+          "id": "1d9afa28893c4b83e02490321e96b5f2",
+          "question": [
+            "¿Cuál fue el rating promedio de las reseñas por mes en 2021?"
+          ]
+        },
+        {
+          "id": "ac9b3121aa3ec42a212e1b819a92e8eb",
+          "question": [
+            "¿Qué reglas antifraude marcaron más casos y cuáles tienen una alerta de ownership?"
+          ]
+        },
+        {
+          "id": "35e0baabf5652f713ff4de6b6b3c87e6",
+          "question": [
+            "¿Qué reglas DQ quedaron bajo su umbral en la última ejecución y de qué dimensión son?"
+          ]
+        }
+      ]
+    },
+    "data_sources": {
+      "tables": [
+        {
+          "identifier": "workspace.yelp_gold.gld_business_anomaly_bursts"
+        },
+        {
+          "identifier": "workspace.yelp_gold.gld_dim_fecha"
+        },
+        {
+          "identifier": "workspace.yelp_gold.gld_dim_negocio"
+        },
+        {
+          "identifier": "workspace.yelp_gold.gld_dim_usuario"
+        },
+        {
+          "identifier": "workspace.yelp_gold.gld_fact_checkin_diario"
+        },
+        {
+          "identifier": "workspace.yelp_gold.gld_fact_resena"
+        },
+        {
+          "identifier": "workspace.yelp_gold.gld_trust_governance"
+        },
+        {
+          "identifier": "workspace.yelp_gold.gld_user_fraud_profile"
+        },
+        {
+          "identifier": "workspace.yelp_gov.dq_reglas"
+        },
+        {
+          "identifier": "workspace.yelp_gov.dq_resultados"
+        },
+        {
+          "identifier": "workspace.yelp_gov.matriz_raci"
+        },
+        {
+          "identifier": "workspace.yelp_gov.pipeline_bitacora"
+        }
+      ]
+    },
+    "instructions": {
+      "text_instructions": [
+        {
+          "id": "e1403d6e7f5e9a4b9090db9056e5b08a",
+          "content": [
+            "Eres el asistente de datos de YelpConnect (Capstone UTEC, Grupo 02). Responde en español.\n",
+            "Usa solo las tablas de este espacio: productos gold (yelp_gold) y tablas de gobierno (yelp_gov).\n",
+            "Vocabulario del glosario de negocio (sinónimo → término oficial → dónde está):\n",
+            "* \"pico de reseñas\", \"review burst\" → Ráfaga de Reseñas → gld_business_anomaly_bursts con es_rafaga_sospechosa = true; cada fila es un negocio en un día.\n",
+            "* \"conteo oficial de check-ins\", \"check-in oficial\", \"visitas\" → Check-in Válido → suma de gld_fact_checkin_diario.n_checkins.\n",
+            "* \"rating\", \"estrellas\", \"stars\" → Calificación → gld_fact_resena.calificacion (1 a 5).\n",
+            "* \"regla antifraude\", \"fraud rule\" → Regla de Fraude → gld_trust_governance (una fila por regla; n_casos_marcados = casos que marca).\n",
+            "* \"alerta de ownership\" → Alerta de Gobierno → gld_trust_governance.alerta_gobierno no vacía.\n",
+            "* \"fraud score\", \"risk score\", \"score antifraude\" → Puntaje de Riesgo → gld_user_fraud_profile.score_riesgo_usuario.\n",
+            "* \"usuario de riesgo\" → Usuario Sospechoso → gld_user_fraud_profile.clasificacion_riesgo en ('Alto', 'Moderado').\n",
+            "* \"regla DQ\" → Regla de Calidad de Datos → yelp_gov.dq_reglas; sus resultados por ejecución están en yelp_gov.dq_resultados (paso = false significa que quedó bajo su umbral).\n",
+            "* \"comercio\", \"local\", \"establecimiento\" → Negocio → gld_dim_negocio (nombre, categoria_principal, ciudad).\n",
+            "* \"review\", \"opinión\" → Reseña → gld_fact_resena.\n",
+            "Reglas de consulta:\n",
+            "* Para fechas une con gld_dim_fecha por fecha_id (anio, mes, nombre_mes, nombre_dia). Las ráfagas usan fecha_ventana (DATE).\n",
+            "* Para nombres de negocio une con gld_dim_negocio por business_id.\n",
+            "* \"Última ejecución\" de calidad = max(ejecucion_ts) en dq_resultados. Ignora la regla DQ-900 (es una prueba controlada).\n",
+            "* Algunas columnas están enmascaradas según el rol de quien pregunta (clasificación de riesgo, reglas activadas, descripción y umbrales de reglas de fraude): si ves '****' o NULL, explica que el dato es confidencial o restringido.\n",
+            "* Fechas relativas: el último mes completo con datos es diciembre de 2021 (enero de 2022 está incompleto, llega hasta el día 19). \"El último mes\", \"este mes\" o \"recientemente\" significan diciembre de 2021, y \"este año\" o \"el último año\" significan 2021, salvo que el usuario pida enero de 2022. Nunca uses la fecha actual del sistema.\n",
+            "* Los datos son una muestra de Philadelphia, de 2005 a enero de 2022."
+          ]
+        }
+      ],
+      "example_question_sqls": [
+        {
+          "id": "1b81b8f3242af6f2f4312469af5daf5e",
+          "question": [
+            "¿Cuántas reseñas y qué calificación promedio tuvo cada categoría en 2020?"
+          ],
+          "sql": [
+            "SELECT n.categoria_principal, count(*) AS resenas, round(avg(r.calificacion), 2) AS calificacion_promedio\n",
+            "FROM workspace.yelp_gold.gld_fact_resena r\n",
+            "JOIN workspace.yelp_gold.gld_dim_fecha d USING (fecha_id)\n",
+            "JOIN workspace.yelp_gold.gld_dim_negocio n USING (business_id)\n",
+            "WHERE d.anio = 2020\n",
+            "GROUP BY n.categoria_principal\n",
+            "ORDER BY resenas DESC"
+          ]
+        },
+        {
+          "id": "78a0915aae74b7c91cf8912f35611ff6",
+          "question": [
+            "¿Cuántos usuarios hay en cada nivel de riesgo?"
+          ],
+          "sql": [
+            "SELECT clasificacion_riesgo, count(*) AS usuarios\n",
+            "FROM workspace.yelp_gold.gld_user_fraud_profile\n",
+            "GROUP BY clasificacion_riesgo\n",
+            "ORDER BY usuarios DESC"
+          ]
+        }
+      ]
+    },
+    "benchmarks": {
+      "questions": [
+        {
+          "id": "0c805c29e210230772243375e7253b94",
+          "question": [
+            "¿Qué negocios tuvieron más picos de reseñas sospechosos en 2021?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT n.nombre AS negocio, count(*) AS rafagas\n",
+                "FROM workspace.yelp_gold.gld_business_anomaly_bursts b\n",
+                "JOIN workspace.yelp_gold.gld_dim_negocio n USING (business_id)\n",
+                "WHERE b.es_rafaga_sospechosa AND year(b.fecha_ventana) = 2021\n",
+                "GROUP BY n.nombre\n",
+                "ORDER BY rafagas DESC"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "54833a1b83cdccbbc56f752691dd0ed6",
+          "question": [
+            "¿Cuál fue el conteo oficial de check-ins por categoría en diciembre de 2021?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT n.categoria_principal, sum(c.n_checkins) AS checkins\n",
+                "FROM workspace.yelp_gold.gld_fact_checkin_diario c\n",
+                "JOIN workspace.yelp_gold.gld_dim_fecha d USING (fecha_id)\n",
+                "JOIN workspace.yelp_gold.gld_dim_negocio n USING (business_id)\n",
+                "WHERE d.anio = 2021 AND d.mes = 12\n",
+                "GROUP BY n.categoria_principal\n",
+                "ORDER BY checkins DESC"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ed6cefc186306d32571fa7aa740bc5f1",
+          "question": [
+            "¿Cuál fue el rating promedio de las reseñas por mes en 2021?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT d.mes, round(avg(r.calificacion), 2) AS calificacion_promedio\n",
+                "FROM workspace.yelp_gold.gld_fact_resena r\n",
+                "JOIN workspace.yelp_gold.gld_dim_fecha d USING (fecha_id)\n",
+                "WHERE d.anio = 2021\n",
+                "GROUP BY d.mes\n",
+                "ORDER BY d.mes"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "8e4f630d9bb3a08d41b7a8b7f1b02c8e",
+          "question": [
+            "¿Qué reglas antifraude marcaron más casos y cuáles tienen una alerta de ownership?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT fraud_rule_id, fraud_description, n_casos_marcados, alerta_gobierno\n",
+                "FROM workspace.yelp_gold.gld_trust_governance\n",
+                "ORDER BY n_casos_marcados DESC"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ea1f466708071cb7dc58a996a668e7f0",
+          "question": [
+            "¿Qué reglas DQ quedaron bajo su umbral en la última ejecución y de qué dimensión son?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "SELECT q.regla_id, q.descripcion, q.dimension, r.pct_cumplimiento, q.umbral_pct\n",
+                "FROM workspace.yelp_gov.dq_resultados r\n",
+                "JOIN workspace.yelp_gov.dq_reglas q ON q.regla_id = r.regla_id\n",
+                "WHERE r.ejecucion_ts = (SELECT max(ejecucion_ts) FROM workspace.yelp_gov.dq_resultados WHERE regla_id <> 'DQ-900')\n",
+                "  AND NOT r.paso"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

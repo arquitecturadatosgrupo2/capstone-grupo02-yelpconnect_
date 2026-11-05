@@ -1,0 +1,9 @@
+resources:
+  dashboards:
+    yelpconnect:
+      display_name: YelpConnect · Negocio y Gobierno
+      file_path: ../E8_dashboard_bi/dashboard_yelpconnect.lvdash.json
+      warehouse_id: 656cbc31df3fbcc2
+      # Sin credenciales embebidas: cada espectador consulta con sus permisos y ve las máscaras de E6
+      # (spec 007 FR-012). Con credenciales de un rol autorizado, todos verían los datos sensibles en claro.
+      embed_credentials: false

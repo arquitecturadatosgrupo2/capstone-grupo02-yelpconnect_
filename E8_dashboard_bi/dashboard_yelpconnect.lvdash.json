@@ -1,0 +1,1683 @@
+{
+  "datasets": [
+    {
+      "name": "ds_rafagas",
+      "displayName": "Ráfagas sospechosas (REQ-01)",
+      "queryLines": [
+        "SELECT b.fecha_ventana, date_trunc('MONTH', b.fecha_ventana) AS mes, n.nombre AS negocio, n.ciudad,\n",
+        "       n.categoria_principal, b.resenas_en_ventana, b.checkins_en_ventana\n",
+        "FROM workspace.yelp_gold.gld_business_anomaly_bursts b\n",
+        "JOIN workspace.yelp_gold.gld_dim_negocio n USING (business_id)\n",
+        "WHERE b.es_rafaga_sospechosa"
+      ]
+    },
+    {
+      "name": "ds_riesgo_nivel",
+      "displayName": "Usuarios por nivel de riesgo (REQ-02)",
+      "queryLines": [
+        "SELECT clasificacion_riesgo AS nivel_riesgo, count(*) AS usuarios\n",
+        "FROM workspace.yelp_gold.gld_user_fraud_profile\n",
+        "GROUP BY 1"
+      ]
+    },
+    {
+      "name": "ds_riesgo_regla",
+      "displayName": "Usuarios por regla de fraude (REQ-02)",
+      "queryLines": [
+        "SELECT concat('Regla ', cast(r.regla_id AS STRING), ' · ', coalesce(g.fraud_description, '****')) AS regla_fraude,\n",
+        "       count(*) AS usuarios\n",
+        "FROM (SELECT explode(reglas_activadas) AS regla_id FROM workspace.yelp_gold.gld_user_fraud_profile) r\n",
+        "LEFT JOIN workspace.yelp_gold.gld_trust_governance g ON g.fraud_rule_id = r.regla_id\n",
+        "GROUP BY 1"
+      ]
+    },
+    {
+      "name": "ds_resenas",
+      "displayName": "Reseñas por mes y categoría (REQ-03)",
+      "queryLines": [
+        "SELECT date_trunc('MONTH', d.fecha) AS mes, n.ciudad, n.categoria_principal,\n",
+        "       count(*) AS resenas, sum(r.calificacion) AS suma_calificacion\n",
+        "FROM workspace.yelp_gold.gld_fact_resena r\n",
+        "JOIN workspace.yelp_gold.gld_dim_fecha d USING (fecha_id)\n",
+        "JOIN workspace.yelp_gold.gld_dim_negocio n USING (business_id)\n",
+        "GROUP BY ALL"
+      ]
+    },
+    {
+      "name": "ds_resenas_categoria",
+      "displayName": "Reseñas de las 15 categorías con más volumen (REQ-04)",
+      "queryLines": [
+        "WITH top AS (\n",
+        "  SELECT n.categoria_principal FROM workspace.yelp_gold.gld_fact_resena r JOIN workspace.yelp_gold.gld_dim_negocio n USING (business_id)\n",
+        "  GROUP BY 1 ORDER BY count(*) DESC LIMIT 15\n",
+        ")\n",
+        "SELECT date_trunc('MONTH', d.fecha) AS mes, n.ciudad, n.categoria_principal,\n",
+        "       count(*) AS resenas, sum(CAST(r.es_extrema AS INT)) AS extremas, sum(r.util) AS votos_utiles\n",
+        "FROM workspace.yelp_gold.gld_fact_resena r\n",
+        "JOIN workspace.yelp_gold.gld_dim_fecha d USING (fecha_id)\n",
+        "JOIN workspace.yelp_gold.gld_dim_negocio n USING (business_id)\n",
+        "JOIN top USING (categoria_principal)\n",
+        "GROUP BY ALL"
+      ]
+    },
+    {
+      "name": "ds_checkins",
+      "displayName": "Check-ins válidos (REQ-05)",
+      "queryLines": [
+        "SELECT date_trunc('MONTH', d.fecha) AS mes, d.dia_semana, concat(cast(d.dia_semana AS STRING), ' · ', d.nombre_dia) AS dia,\n",
+        "       n.ciudad, n.categoria_principal, sum(c.n_checkins) AS checkins\n",
+        "FROM workspace.yelp_gold.gld_fact_checkin_diario c\n",
+        "JOIN workspace.yelp_gold.gld_dim_fecha d USING (fecha_id)\n",
+        "JOIN workspace.yelp_gold.gld_dim_negocio n USING (business_id)\n",
+        "GROUP BY ALL"
+      ]
+    },
+    {
+      "name": "ds_calidad_ultima",
+      "displayName": "Última ejecución de cada regla de calidad (REQ-06)",
+      "queryLines": [
+        "WITH ultima AS (\n",
+        "  SELECT regla_id, max(ejecucion_ts) AS ts FROM workspace.yelp_gov.dq_resultados\n",
+        "  WHERE regla_id <> 'DQ-900'\n",
+        "  GROUP BY 1\n",
+        ")\n",
+        "SELECT r.regla_id, q.descripcion, q.dimension, q.criticidad, q.data_owner,\n",
+        "       round(r.pct_cumplimiento, 3) AS cumplimiento_pct, q.umbral_pct,\n",
+        "       CASE WHEN r.paso THEN 'En verde' ELSE 'En rojo' END AS estado, r.ejecucion_ts\n",
+        "FROM workspace.yelp_gov.dq_resultados r\n",
+        "JOIN ultima u ON u.regla_id = r.regla_id AND u.ts = r.ejecucion_ts\n",
+        "JOIN workspace.yelp_gov.dq_reglas q ON q.regla_id = r.regla_id"
+      ]
+    },
+    {
+      "name": "ds_calidad_historia",
+      "displayName": "Historial de calidad por dimensión (REQ-07)",
+      "queryLines": [
+        "SELECT r.ejecucion_ts, q.dimension, avg(r.pct_cumplimiento) AS cumplimiento_pct,\n",
+        "       count_if(NOT r.paso) AS reglas_en_rojo\n",
+        "FROM workspace.yelp_gov.dq_resultados r\n",
+        "JOIN workspace.yelp_gov.dq_reglas q ON q.regla_id = r.regla_id\n",
+        "WHERE r.regla_id <> 'DQ-900'\n",
+        "GROUP BY ALL"
+      ]
+    },
+    {
+      "name": "ds_cobertura",
+      "displayName": "Cobertura de documentación y ownership (REQ-08)",
+      "queryLines": [
+        "SELECT\n",
+        "  (SELECT round(100 * count_if(descripcion_negocio IS NOT NULL AND trim(descripcion_negocio) <> '') / count(*), 1)\n",
+        "     FROM workspace.yelp_gov.diccionario_datos) AS pct_columnas_documentadas,\n",
+        "  (SELECT round(100 * count_if(data_owner IS NOT NULL) / count(*), 1) FROM workspace.yelp_gov.matriz_raci) AS pct_entidades_con_owner,\n",
+        "  (SELECT count(*) FROM workspace.yelp_gov.diccionario_datos) AS columnas,\n",
+        "  (SELECT count(*) FROM workspace.yelp_gov.matriz_raci) AS entidades"
+      ]
+    },
+    {
+      "name": "ds_alertas",
+      "displayName": "Reglas de fraude y alertas de gobierno (REQ-09)",
+      "queryLines": [
+        "SELECT fraud_rule_id AS regla, entidad, fraud_description AS descripcion, rule_status AS estado_regla,\n",
+        "       n_casos_marcados, team_name AS equipo, team_status AS estado_equipo,\n",
+        "       coalesce(nullif(alerta_gobierno, ''), 'Ninguna') AS alerta_gobierno,\n",
+        "       CASE WHEN nullif(alerta_gobierno, '') IS NOT NULL THEN 'Abierta' ELSE 'Sin alerta' END AS estado_alerta\n",
+        "FROM workspace.yelp_gold.gld_trust_governance"
+      ]
+    },
+    {
+      "name": "ds_pipeline",
+      "displayName": "Corridas del pipeline (REQ-10)",
+      "queryLines": [
+        "SELECT job_run_id, min(ejecucion_ts) AS inicio, count(*) AS tareas,\n",
+        "       count_if(estado <> 'SUCCESS') AS tareas_no_exitosas, sum(intentos - 1) AS reintentos,\n",
+        "       round(sum(duracion_seg) / 60, 1) AS minutos_computo,\n",
+        "       CASE WHEN count_if(estado <> 'SUCCESS') = 0 THEN 'Exitosa' ELSE 'Con fallas' END AS resultado\n",
+        "FROM workspace.yelp_gov.pipeline_bitacora\n",
+        "WHERE job_run_id RLIKE '^[0-9]+$'\n",
+        "GROUP BY job_run_id"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "negocio",
+      "displayName": "Negocio",
+      "layout": [
+        {
+          "widget": {
+            "name": "titulo_negocio",
+            "multilineTextboxSpec": {
+              "lines": [
+                "# YelpConnect · Negocio\n",
+                "Indicadores pedidos por cada área en la sección 7 del Documento Formal. Cada visual nombra su requerimiento (REQ) y el stakeholder que lo pidió. Muestra: Philadelphia, 2005 a enero de 2022.\n"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "f_mes",
+            "queries": [
+              {
+                "name": "f_f_mes_ds_rafagas",
+                "query": {
+                  "datasetName": "ds_rafagas",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "mes",
+                      "expression": "`mes`"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "f_f_mes_ds_resenas",
+                "query": {
+                  "datasetName": "ds_resenas",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "mes",
+                      "expression": "`mes`"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "f_f_mes_ds_resenas_categoria",
+                "query": {
+                  "datasetName": "ds_resenas_categoria",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "mes",
+                      "expression": "`mes`"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "f_f_mes_ds_checkins",
+                "query": {
+                  "datasetName": "ds_checkins",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "mes",
+                      "expression": "`mes`"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-date-range-picker",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "mes",
+                    "displayName": "Mes",
+                    "queryName": "f_f_mes_ds_rafagas"
+                  },
+                  {
+                    "fieldName": "mes",
+                    "displayName": "Mes",
+                    "queryName": "f_f_mes_ds_resenas"
+                  },
+                  {
+                    "fieldName": "mes",
+                    "displayName": "Mes",
+                    "queryName": "f_f_mes_ds_resenas_categoria"
+                  },
+                  {
+                    "fieldName": "mes",
+                    "displayName": "Mes",
+                    "queryName": "f_f_mes_ds_checkins"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Mes"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 2,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "f_ciudad",
+            "queries": [
+              {
+                "name": "f_f_ciudad_ds_rafagas",
+                "query": {
+                  "datasetName": "ds_rafagas",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "ciudad",
+                      "expression": "`ciudad`"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "f_f_ciudad_ds_resenas",
+                "query": {
+                  "datasetName": "ds_resenas",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "ciudad",
+                      "expression": "`ciudad`"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "f_f_ciudad_ds_resenas_categoria",
+                "query": {
+                  "datasetName": "ds_resenas_categoria",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "ciudad",
+                      "expression": "`ciudad`"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "f_f_ciudad_ds_checkins",
+                "query": {
+                  "datasetName": "ds_checkins",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "ciudad",
+                      "expression": "`ciudad`"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "ciudad",
+                    "displayName": "Ciudad",
+                    "queryName": "f_f_ciudad_ds_rafagas"
+                  },
+                  {
+                    "fieldName": "ciudad",
+                    "displayName": "Ciudad",
+                    "queryName": "f_f_ciudad_ds_resenas"
+                  },
+                  {
+                    "fieldName": "ciudad",
+                    "displayName": "Ciudad",
+                    "queryName": "f_f_ciudad_ds_resenas_categoria"
+                  },
+                  {
+                    "fieldName": "ciudad",
+                    "displayName": "Ciudad",
+                    "queryName": "f_f_ciudad_ds_checkins"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Ciudad"
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 2,
+            "width": 2,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "f_categoria",
+            "queries": [
+              {
+                "name": "f_f_categoria_ds_rafagas",
+                "query": {
+                  "datasetName": "ds_rafagas",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "categoria_principal",
+                      "expression": "`categoria_principal`"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "f_f_categoria_ds_resenas",
+                "query": {
+                  "datasetName": "ds_resenas",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "categoria_principal",
+                      "expression": "`categoria_principal`"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "f_f_categoria_ds_resenas_categoria",
+                "query": {
+                  "datasetName": "ds_resenas_categoria",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "categoria_principal",
+                      "expression": "`categoria_principal`"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "f_f_categoria_ds_checkins",
+                "query": {
+                  "datasetName": "ds_checkins",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "categoria_principal",
+                      "expression": "`categoria_principal`"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "categoria_principal",
+                    "displayName": "Categoría",
+                    "queryName": "f_f_categoria_ds_rafagas"
+                  },
+                  {
+                    "fieldName": "categoria_principal",
+                    "displayName": "Categoría",
+                    "queryName": "f_f_categoria_ds_resenas"
+                  },
+                  {
+                    "fieldName": "categoria_principal",
+                    "displayName": "Categoría",
+                    "queryName": "f_f_categoria_ds_resenas_categoria"
+                  },
+                  {
+                    "fieldName": "categoria_principal",
+                    "displayName": "Categoría",
+                    "queryName": "f_f_categoria_ds_checkins"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Categoría"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 2,
+            "width": 2,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "n1_rafagas",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_rafagas",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "Ráfagas",
+                      "expression": "COUNT(`fecha_ventana`)"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "Ráfagas",
+                  "displayName": "Ráfagas"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Ráfagas sospechosas en el periodo",
+                "showDescription": true,
+                "description": "REQ-01 · Rafael Nakamura, Trust & Safety"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 3,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "n2_rafagas_mes",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_rafagas",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "mes",
+                      "expression": "`mes`"
+                    },
+                    {
+                      "name": "rafagas",
+                      "expression": "COUNT(`fecha_ventana`)"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "mes",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Mes"
+                },
+                "y": {
+                  "fieldName": "rafagas",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Ráfagas"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Ráfagas sospechosas por mes",
+                "showDescription": true,
+                "description": "REQ-01 · Rafael Nakamura, Trust & Safety"
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 3,
+            "width": 4,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "n3_rafagas_negocio",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_rafagas",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "rafagas",
+                      "expression": "COUNT(`fecha_ventana`)"
+                    },
+                    {
+                      "name": "negocio",
+                      "expression": "`negocio`"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "rafagas",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Ráfagas"
+                },
+                "y": {
+                  "fieldName": "negocio",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x-reversed"
+                    }
+                  },
+                  "displayName": "Negocio"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Negocios con más ráfagas sospechosas",
+                "showDescription": true,
+                "description": "REQ-01 · Rafael Nakamura, Trust & Safety"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 8,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "n4_riesgo_nivel",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_riesgo_nivel",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "nivel_riesgo",
+                      "expression": "`nivel_riesgo`"
+                    },
+                    {
+                      "name": "usuarios",
+                      "expression": "SUM(`usuarios`)"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "nivel_riesgo",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Nivel de riesgo"
+                },
+                "y": {
+                  "fieldName": "usuarios",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Usuarios"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Usuarios por nivel de riesgo",
+                "showDescription": true,
+                "description": "REQ-02 · Rafael Nakamura, Trust & Safety · columnas confidenciales: en claro solo para Trust & Safety"
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 8,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "n5_riesgo_regla",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_riesgo_regla",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "usuarios",
+                      "expression": "SUM(`usuarios`)"
+                    },
+                    {
+                      "name": "regla_fraude",
+                      "expression": "`regla_fraude`"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "usuarios",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Usuarios"
+                },
+                "y": {
+                  "fieldName": "regla_fraude",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x-reversed"
+                    }
+                  },
+                  "displayName": "Regla de fraude"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Usuarios marcados por regla de fraude",
+                "showDescription": true,
+                "description": "REQ-02 · Rafael Nakamura, Trust & Safety · columnas confidenciales: en claro solo para Trust & Safety"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 14,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "n6_resenas_mes",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_resenas",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "mes",
+                      "expression": "`mes`"
+                    },
+                    {
+                      "name": "resenas",
+                      "expression": "SUM(`resenas`)"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "mes",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Mes"
+                },
+                "y": {
+                  "fieldName": "resenas",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Reseñas"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Reseñas por mes",
+                "showDescription": true,
+                "description": "REQ-03 · Andrew Collins, Producto"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 19,
+            "width": 3,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "n6b_calificacion_mes",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_resenas",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "mes",
+                      "expression": "`mes`"
+                    },
+                    {
+                      "name": "calificacion",
+                      "expression": "SUM(`suma_calificacion`) / SUM(`resenas`)"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "mes",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Mes"
+                },
+                "y": {
+                  "fieldName": "calificacion",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Calificación promedio"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Calificación promedio por mes",
+                "showDescription": true,
+                "description": "REQ-03 · Andrew Collins, Producto"
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 19,
+            "width": 3,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "n7_extremas",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_resenas_categoria",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "pct_extremas",
+                      "expression": "SUM(`extremas`) * 100.0 / SUM(`resenas`)"
+                    },
+                    {
+                      "name": "categoria",
+                      "expression": "`categoria_principal`"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "pct_extremas",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "% extremas"
+                },
+                "y": {
+                  "fieldName": "categoria",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x-reversed"
+                    }
+                  },
+                  "displayName": "Categoría"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "% de calificaciones extremas (1 o 5 estrellas) por categoría",
+                "showDescription": true,
+                "description": "REQ-04 · Jessica Martinez, Marketing & Growth · 15 categorías con más reseñas"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 24,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "n8_utiles",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_resenas_categoria",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "utiles",
+                      "expression": "SUM(`votos_utiles`) / SUM(`resenas`)"
+                    },
+                    {
+                      "name": "categoria",
+                      "expression": "`categoria_principal`"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "utiles",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Votos útiles por reseña"
+                },
+                "y": {
+                  "fieldName": "categoria",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x-reversed"
+                    }
+                  },
+                  "displayName": "Categoría"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Votos útiles por reseña, por categoría",
+                "showDescription": true,
+                "description": "REQ-04 · Jessica Martinez, Marketing & Growth · 15 categorías con más reseñas"
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 24,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "n9_checkins_dia",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_checkins",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "dia",
+                      "expression": "`dia`"
+                    },
+                    {
+                      "name": "checkins",
+                      "expression": "SUM(`checkins`)"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "dia",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Día de la semana"
+                },
+                "y": {
+                  "fieldName": "checkins",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Check-ins válidos"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Check-ins válidos por día de la semana",
+                "showDescription": true,
+                "description": "REQ-05 · Carla Romero, Operaciones Comerciales"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 30,
+            "width": 3,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "n10_checkins_mes",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_checkins",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "mes",
+                      "expression": "`mes`"
+                    },
+                    {
+                      "name": "checkins",
+                      "expression": "SUM(`checkins`)"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "mes",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Mes"
+                },
+                "y": {
+                  "fieldName": "checkins",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Check-ins válidos"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Check-ins válidos por mes",
+                "showDescription": true,
+                "description": "REQ-05 · Carla Romero, Operaciones Comerciales"
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 30,
+            "width": 3,
+            "height": 5
+          }
+        }
+      ]
+    },
+    {
+      "name": "gobierno",
+      "displayName": "Gobierno",
+      "layout": [
+        {
+          "widget": {
+            "name": "titulo_gobierno",
+            "multilineTextboxSpec": {
+              "lines": [
+                "# YelpConnect · Gobierno\n",
+                "Salud del gobierno de datos para la CDO: calidad (E5), documentación y ownership (E4, E6), alertas de las reglas de fraude y operación del pipeline (E7). La regla DQ-900 (prueba controlada del gate) se excluye.\n"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "g1_rojas",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_calidad_ultima",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "Reglas en rojo",
+                      "expression": "SUM(CASE WHEN `estado` = 'En rojo' THEN 1 ELSE 0 END)"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "Reglas en rojo",
+                  "displayName": "Reglas en rojo"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Reglas de calidad en rojo (última ejecución)",
+                "showDescription": true,
+                "description": "REQ-06 · Laura Hernández, CDO"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "g4_documentado",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_cobertura",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "% documentado",
+                      "expression": "MAX(`pct_columnas_documentadas`)"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "% documentado",
+                  "displayName": "% documentado"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "% de columnas documentadas",
+                "showDescription": true,
+                "description": "REQ-08 · Laura Hernández, CDO"
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 2,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "g5_owner",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_cobertura",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "% con owner",
+                      "expression": "MAX(`pct_entidades_con_owner`)"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "% con owner",
+                  "displayName": "% con owner"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "% de entidades con Data Owner",
+                "showDescription": true,
+                "description": "REQ-08 · Laura Hernández, CDO"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 2,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "g2_calidad",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_calidad_ultima",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "name": "estado",
+                      "expression": "`estado`"
+                    },
+                    {
+                      "name": "regla_id",
+                      "expression": "`regla_id`"
+                    },
+                    {
+                      "name": "descripcion",
+                      "expression": "`descripcion`"
+                    },
+                    {
+                      "name": "dimension",
+                      "expression": "`dimension`"
+                    },
+                    {
+                      "name": "criticidad",
+                      "expression": "`criticidad`"
+                    },
+                    {
+                      "name": "cumplimiento_pct",
+                      "expression": "`cumplimiento_pct`"
+                    },
+                    {
+                      "name": "umbral_pct",
+                      "expression": "`umbral_pct`"
+                    },
+                    {
+                      "name": "data_owner",
+                      "expression": "`data_owner`"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "estado",
+                    "title": "Estado",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 0
+                  },
+                  {
+                    "fieldName": "regla_id",
+                    "title": "Regla",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 1
+                  },
+                  {
+                    "fieldName": "descripcion",
+                    "title": "Regla en lenguaje de negocio",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 2
+                  },
+                  {
+                    "fieldName": "dimension",
+                    "title": "Dimensión",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 3
+                  },
+                  {
+                    "fieldName": "criticidad",
+                    "title": "Criticidad",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 4
+                  },
+                  {
+                    "fieldName": "cumplimiento_pct",
+                    "title": "Cumplimiento %",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 5
+                  },
+                  {
+                    "fieldName": "umbral_pct",
+                    "title": "Umbral %",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 6
+                  },
+                  {
+                    "fieldName": "data_owner",
+                    "title": "Data Owner",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 7
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Reglas de calidad: última ejecución",
+                "showDescription": true,
+                "description": "REQ-06 · Laura Hernández, CDO"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 6,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "g3_historia",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_calidad_historia",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "ejecucion",
+                      "expression": "`ejecucion_ts`"
+                    },
+                    {
+                      "name": "cumplimiento",
+                      "expression": "AVG(`cumplimiento_pct`)"
+                    },
+                    {
+                      "name": "dimension",
+                      "expression": "`dimension`"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "ejecucion",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Ejecución"
+                },
+                "y": {
+                  "fieldName": "cumplimiento",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Cumplimiento %"
+                },
+                "color": {
+                  "fieldName": "dimension",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Dimensión"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Cumplimiento promedio por dimensión y ejecución",
+                "showDescription": true,
+                "description": "REQ-07 · Laura Hernández, CDO"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 12,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "g6_alertas",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_alertas",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "name": "estado_alerta",
+                      "expression": "`estado_alerta`"
+                    },
+                    {
+                      "name": "regla",
+                      "expression": "`regla`"
+                    },
+                    {
+                      "name": "descripcion",
+                      "expression": "`descripcion`"
+                    },
+                    {
+                      "name": "entidad",
+                      "expression": "`entidad`"
+                    },
+                    {
+                      "name": "estado_regla",
+                      "expression": "`estado_regla`"
+                    },
+                    {
+                      "name": "n_casos_marcados",
+                      "expression": "`n_casos_marcados`"
+                    },
+                    {
+                      "name": "equipo",
+                      "expression": "`equipo`"
+                    },
+                    {
+                      "name": "estado_equipo",
+                      "expression": "`estado_equipo`"
+                    },
+                    {
+                      "name": "alerta_gobierno",
+                      "expression": "`alerta_gobierno`"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "estado_alerta",
+                    "title": "Alerta",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 0
+                  },
+                  {
+                    "fieldName": "regla",
+                    "title": "Regla",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 1
+                  },
+                  {
+                    "fieldName": "descripcion",
+                    "title": "Descripción",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 2
+                  },
+                  {
+                    "fieldName": "entidad",
+                    "title": "Entidad",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 3
+                  },
+                  {
+                    "fieldName": "estado_regla",
+                    "title": "Estado regla",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 4
+                  },
+                  {
+                    "fieldName": "n_casos_marcados",
+                    "title": "Casos marcados",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 5
+                  },
+                  {
+                    "fieldName": "equipo",
+                    "title": "Equipo",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 6
+                  },
+                  {
+                    "fieldName": "estado_equipo",
+                    "title": "Estado equipo",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 7
+                  },
+                  {
+                    "fieldName": "alerta_gobierno",
+                    "title": "Detalle de la alerta",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 8
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Reglas de fraude: casos marcados y alertas de gobierno",
+                "showDescription": true,
+                "description": "REQ-09 · Laura Hernández, CDO y Rafael Nakamura, Trust & Safety · descripción restringida: en claro solo para Trust & Safety"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 18,
+            "width": 6,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "g7_pipeline",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_pipeline",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "name": "inicio",
+                      "expression": "`inicio`"
+                    },
+                    {
+                      "name": "resultado",
+                      "expression": "`resultado`"
+                    },
+                    {
+                      "name": "tareas",
+                      "expression": "`tareas`"
+                    },
+                    {
+                      "name": "tareas_no_exitosas",
+                      "expression": "`tareas_no_exitosas`"
+                    },
+                    {
+                      "name": "reintentos",
+                      "expression": "`reintentos`"
+                    },
+                    {
+                      "name": "minutos_computo",
+                      "expression": "`minutos_computo`"
+                    },
+                    {
+                      "name": "job_run_id",
+                      "expression": "`job_run_id`"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "inicio",
+                    "title": "Inicio",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 0
+                  },
+                  {
+                    "fieldName": "resultado",
+                    "title": "Resultado",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 1
+                  },
+                  {
+                    "fieldName": "tareas",
+                    "title": "Tareas",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 2
+                  },
+                  {
+                    "fieldName": "tareas_no_exitosas",
+                    "title": "No exitosas",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 3
+                  },
+                  {
+                    "fieldName": "reintentos",
+                    "title": "Reintentos",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 4
+                  },
+                  {
+                    "fieldName": "minutos_computo",
+                    "title": "Minutos de cómputo",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 5
+                  },
+                  {
+                    "fieldName": "job_run_id",
+                    "title": "Corrida",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 6
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Corridas del pipeline",
+                "showDescription": true,
+                "description": "REQ-10 · Laura Hernández, CDO"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 25,
+            "width": 6,
+            "height": 6
+          }
+        }
+      ]
+    }
+  ]
+}
