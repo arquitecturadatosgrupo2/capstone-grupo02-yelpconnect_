@@ -460,10 +460,11 @@ print(f"✔ Modelo físico validado: {len(TABLAS['yelp_silver'])} tablas silver 
 # MAGIC   tablas reales. Las 16 tablas conservaron sus conteos de filas (por ejemplo, 399.453 reseñas y 160.993 perfiles).
 # MAGIC - **FK nuevas:** antes de declararlas, 0 perfiles sin usuario en `gld_dim_usuario` y 0 filas de ráfagas sin negocio
 # MAGIC   en `gld_dim_negocio`.
+# MAGIC - **Diagrama ER:** `img/er_gld_fact_resena.png`, de Catalog Explorer: `gld_fact_resena` con sus FK a las tres dimensiones.
 # MAGIC
 # MAGIC ### Definition of Done (E3)
 # MAGIC - [x] DDL completo de silver (7 entidades y cuarentena) y gold (3 productos de datos + estrella de 3 dims y 2 facts).
 # MAGIC - [x] 100% de tablas y columnas con COMMENT, y toda tabla nombra a su Data Owner (la celda de validación pasa).
 # MAGIC - [x] PK/FK declaradas y CHECK donde el negocio lo exige.
 # MAGIC - [x] El DDL corre sobre un catálogo vacío y re-ejecutado no cambia datos (ver «Evidencia»).
-# MAGIC - [ ] Captura del diagrama de lineage/ER de Catalog Explorer en `img/`.
+# MAGIC - [x] Captura del diagrama ER de Catalog Explorer en `img/er_gld_fact_resena.png`.

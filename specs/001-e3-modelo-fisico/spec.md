@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-24
 
-**Status**: Implementada (2026-11-06); pendiente la captura del diagrama y la decisión sobre `gld_vw_fraude_resena`
+**Status**: Implementada (2026-11-06); pendiente la decisión sobre `gld_vw_fraude_resena`
 
 **Input**: User description: "Para cada entregable de este proyecto, genera las specs necesarias" — entregable E3 (Modelo físico, M4 Modelado Avanzado).
 
