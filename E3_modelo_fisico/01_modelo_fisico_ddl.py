@@ -189,16 +189,20 @@
 # MAGIC -- Nombres con prefijo gld_ (convención obligatoria). En YELP.sql y el mapeo figuran como fact_/dim_.
 # MAGIC CREATE SCHEMA IF NOT EXISTS workspace.yelp_gold;
 # MAGIC
+# MAGIC -- Auditoría 2026-11-02: promedio_estrellas_otorgadas → promedio_estrellas_historico y nueva señal
+# MAGIC -- n_resenas_dia_registro (score input de la regla 4). nb_gold_user_fraud_profile migra en caliente
+# MAGIC -- las tablas ya creadas; este DDL crea el esquema auditado en entornos nuevos.
 # MAGIC CREATE TABLE IF NOT EXISTS workspace.yelp_gold.gld_user_fraud_profile (
 # MAGIC   user_id                            STRING NOT NULL COMMENT 'FK al usuario evaluado',
 # MAGIC   total_resenas                      INT       COMMENT 'Cantidad total de reseñas históricas del usuario',
-# MAGIC   promedio_estrellas_otorgadas       DOUBLE    COMMENT 'Promedio histórico de calificaciones otorgadas por el usuario',
+# MAGIC   promedio_estrellas_historico         DOUBLE    COMMENT 'Promedio histórico de calificaciones según el archivo fuente (no el promedio de la muestra; ninguna regla lo usa)',
 # MAGIC   desviacion_estandar_estrellas      DOUBLE    COMMENT 'Desviación estándar de sus calificaciones (0 suele indicar comportamiento de bot)',
 # MAGIC   porcentaje_calificaciones_extremas DOUBLE    COMMENT 'Porcentaje de reseñas con calificación 1 o 5 sobre el total del usuario',
 # MAGIC   max_resenas_en_un_dia              INT       COMMENT 'Máximo de reseñas escritas por el usuario en un mismo día',
 # MAGIC   amigos_count                       INT       COMMENT 'Cantidad de amigos en su red',
 # MAGIC   fans_count                         BIGINT    COMMENT 'Cantidad de seguidores',
 # MAGIC   antiguedad_dias                    INT       COMMENT 'Días transcurridos desde el registro del usuario',
+# MAGIC   n_resenas_dia_registro             INT       COMMENT 'Score input de la regla 4 (versión amplia): reseñas extremas de <250 caracteres escritas el día de registro del autor',
 # MAGIC   reglas_activadas                   ARRAY<BIGINT> COMMENT 'fraud_rule_id de las reglas activas de usuario que se cumplen (linaje regla → caso)',
 # MAGIC   score_riesgo_usuario               DOUBLE    COMMENT 'Suma de puntos de las reglas activadas, tope 100',
 # MAGIC   clasificacion_riesgo               STRING    COMMENT 'Categoría de riesgo: Bajo, Moderado o Alto',

@@ -124,6 +124,10 @@ for tarea, t in sorted(ultimo.items()):
     ))
 
 destino = "workspace.yelp_gov.pipeline_bitacora"
+# Idempotente entre reintentos y repairs: un intento previo de esta tarea puede haber dejado filas de
+# esta misma corrida; un append las duplicaría y la validación de la celda siguiente fallaría.
+# Se reemplazan siempre: la corrida queda registrada una sola vez, con el estado final de cada tarea.
+spark.sql(f"DELETE FROM {destino} WHERE job_run_id = '{job_run_id}'")
 (spark.createDataFrame(registros, schema=spark.table(destino).schema)
     .write.mode("append").saveAsTable(destino))
 
@@ -171,12 +175,12 @@ DBU_HORA_SUPUESTO = (2.0, 6.0)                        # rango supuesto de DBU/ho
 CORRIDAS_MES = 30
 
 ultima = spark.sql(f"""
-  SELECT job_run_id, count(*) AS tareas, sum(duracion_seg) AS seg_computo
+  SELECT job_run_id, count(*) AS tareas, sum(duracion_seg) AS seg_computo, max(ejecucion_ts) AS ultima_ts
   FROM {destino}
   WHERE job_run_id RLIKE '^[0-9]+$'
   GROUP BY job_run_id
   HAVING count_if(estado <> 'SUCCESS') = 0
-  ORDER BY max(ejecucion_ts) DESC LIMIT 1
+  ORDER BY ultima_ts DESC LIMIT 1
 """).first()
 horas = ultima.seg_computo / 3600
 

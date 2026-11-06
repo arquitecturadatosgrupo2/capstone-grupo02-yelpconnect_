@@ -1,11 +1,11 @@
 fraud_rule_id,fraud_description,entidad,umbral,min_resenas,puntos,risk_level,rule_status,team_id
 1,Usuario publica en un mismo día un número de reseñas igual o mayor al umbral,Usuario,5,,30,Alto,Activa,1
-2,Usuario con desviación estándar de sus calificaciones menor o igual al umbral y un mínimo de reseñas,usuario,0,10,25,alto,activa,1
+2,Usuario con un mínimo de reseñas y todas sus calificaciones de 1 estrella o todas de 5 estrellas,usuario,,5,25,alto,activa,1
 3,Porcentaje de calificaciones de 1 o 5 estrellas del usuario mayor al umbral,Usuario,90,5,20,Medio,Activa,2
-4,Cuenta con antigüedad en días menor al umbral,usuario,30,,10,medio,Activa,1
+4,Reseña de 1 o 5 estrellas de menos de 250 caracteres escrita el día de registro del autor en un negocio y día con ráfaga marcada,usuario,,,10,medio,Activa,1
 5,Negocio recibe en un día más reseñas que el umbral multiplicado por su promedio diario,Negocio,3,3,,ALTO,Activa,3
 6,Negocio con un ratio de reseñas sobre check-ins del día mayor al umbral,negocio,5,3,,Medio,activa,3
-7,Usuario sin amigos ni fans con un mínimo de reseñas,Usuario,,10,15,bajo,Activa,1
+7,Usuario sin amigos ni fans con un mínimo de reseñas y un porcentaje de calificaciones de 1 o 5 estrellas mayor o igual al umbral,Usuario,80,5,15,medio,Activa,1
 8,Reseñas con texto idéntico publicadas por usuarios distintos,usuario,,,,Alto,Inactiva,2
 9,Negocio recibe en un día un número de reseñas de 1 estrella igual o mayor al umbral,Negocio,3,,,Alto,Activa,4
 10,Usuario que solo reseña negocios de una misma cadena,usuario,,,,Bajo,INACTIVA,2

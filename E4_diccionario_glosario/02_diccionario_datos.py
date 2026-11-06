@@ -80,10 +80,12 @@ display(spark.table(TABLA))
 # DBTITLE 1,Validador 1 — Cobertura de documentación (columna física ↔ diccionario)
 cobertura = spark.sql("""
   WITH fisicas AS (
-    SELECT concat_ws('.', 'workspace', table_schema, table_name, column_name) AS nombre_fisico,
-           table_schema AS capa
-    FROM workspace.information_schema.columns
-    WHERE table_schema IN ('yelp_silver', 'yelp_gold')
+    SELECT concat_ws('.', 'workspace', c.table_schema, c.table_name, c.column_name) AS nombre_fisico,
+           c.table_schema AS capa
+    FROM workspace.information_schema.columns c
+    JOIN workspace.information_schema.tables t
+      ON t.table_schema = c.table_schema AND t.table_name = c.table_name
+    WHERE c.table_schema IN ('yelp_silver', 'yelp_gold') AND t.table_type <> 'VIEW'
   )
   SELECT f.capa,
          count(*)                                          AS columnas_fisicas,
@@ -96,10 +98,12 @@ cobertura = spark.sql("""
 display(cobertura)
 
 faltantes = spark.sql("""
-  SELECT concat_ws('.', 'workspace', table_schema, table_name, column_name) AS sin_documentar
-  FROM workspace.information_schema.columns
-  WHERE table_schema IN ('yelp_silver', 'yelp_gold')
-    AND concat_ws('.', 'workspace', table_schema, table_name, column_name)
+  SELECT concat_ws('.', 'workspace', c.table_schema, c.table_name, c.column_name) AS sin_documentar
+  FROM workspace.information_schema.columns c
+  JOIN workspace.information_schema.tables t
+    ON t.table_schema = c.table_schema AND t.table_name = c.table_name
+  WHERE c.table_schema IN ('yelp_silver', 'yelp_gold') AND t.table_type <> 'VIEW'
+    AND concat_ws('.', 'workspace', c.table_schema, c.table_name, c.column_name)
         NOT IN (SELECT nombre_fisico FROM workspace.yelp_gov.diccionario_datos)
 """)
 n_faltantes = faltantes.count()
@@ -172,12 +176,14 @@ print("Tags de clasificación aplicados ✔ (insumo directo de E6)")
 # MAGIC   decisiones de riesgo sobre personas (score y clasificación); Restringido = la lógica antifraude (umbrales,
 # MAGIC   puntos y descripción de las reglas); Interno = el resto.
 # MAGIC - La hoja «Diccionario resumido» se genera de la hoja completa (mismas filas), así que son coherentes.
+# MAGIC - El validador de cobertura exige documentar solo tablas: las vistas no guardan datos propios y las máscaras
+# MAGIC   se aplican en sus tablas base.
 # MAGIC
 # MAGIC ### Definition of Done (E4.2)
-# MAGIC - [x] 100 % de las columnas de `yelp_silver` y `yelp_gold` presentes en el diccionario (152 columnas).
+# MAGIC - [x] 100 % de las columnas de las tablas de `yelp_silver` y `yelp_gold` presentes en el diccionario (153 columnas).
 # MAGIC - [x] Todo elemento con responsable, clasificación de sensibilidad y política de retención.
 # MAGIC - [x] Toda regla citada como `DQ-nnn` existe en `yelp_gov.dq_reglas` (sin huérfanas).
 # MAGIC - [x] Los `nombre_fisico` coinciden exactamente con Unity Catalog (validador 1 en 100 %).
-# MAGIC - [x] Tags de clasificación aplicados y visibles en el catálogo (152 columnas; E6 los usa para máscaras y acceso).
+# MAGIC - [x] Tags de clasificación aplicados y visibles en el catálogo (153 columnas; E6 los usa para máscaras y acceso).
 # MAGIC - [x] Hoja "Diccionario resumido" coherente con la hoja completa (es la de la sustentación).
 # MAGIC - [ ] Párrafo de reflexión: ¿qué se hereda del catálogo y qué debe negociarse con el negocio?
