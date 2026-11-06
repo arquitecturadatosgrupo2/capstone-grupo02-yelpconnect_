@@ -312,4 +312,5 @@ print(f"✔ {len(VISTAS)} vistas con COMMENT · grano de reseña conservado ({re
 # MAGIC
 # MAGIC ### Definition of Done (vistas de consumo)
 # MAGIC - [x] DDL versionado con `COMMENT` en la vista y en sus columnas.
-# MAGIC - [x] Creación de las vistas incluida en el job.
+# MAGIC - [x] Creación de las vistas incluida en el job: corrida `1037841980114526` del 2026-11-06 (17 tareas en SUCCESS).
+# MAGIC       Al reemplazarlas, el job queda como dueño de las vistas; los permisos heredados del schema no cambian.
