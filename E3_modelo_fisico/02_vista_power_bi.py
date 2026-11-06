@@ -4,7 +4,7 @@
 # MAGIC Una fila por reseña, con temporalidad, perfil de fraude del usuario, reglas con descripción y anomalías del
 # MAGIC negocio en el día. Definición tomada del workspace (`SHOW CREATE TABLE`, 2026-11-05).
 # MAGIC
-# MAGIC Se ejecuta a mano tras la primera carga de gold; no forma parte del job. En entornos existentes, la celda de
+# MAGIC La tarea `GOLD_vista_power_bi` del job la crea o actualiza después de gold. En entornos existentes, la celda de
 # MAGIC migración de `nb_gold_user_fraud_profile` mantiene la vista alineada con el esquema de la tabla.
 
 # COMMAND ----------
@@ -19,7 +19,7 @@
 # MAGIC   trimestre COMMENT 'Trimestre del año (1 a 4)',
 # MAGIC   mes COMMENT 'Mes del año (1 a 12)',
 # MAGIC   nombre_mes COMMENT 'Nombre del mes en español',
-# MAGIC   anio_mes,
+# MAGIC   anio_mes COMMENT 'Año y mes de la reseña en formato yyyy-MM',
 # MAGIC   dia COMMENT 'Día del mes',
 # MAGIC   dia_semana COMMENT 'Día de la semana ISO (1 = lunes, 7 = domingo)',
 # MAGIC   nombre_dia COMMENT 'Nombre del día de la semana en español',
@@ -41,15 +41,15 @@
 # MAGIC   antiguedad_dias COMMENT 'Días transcurridos desde el registro del usuario',
 # MAGIC   score_riesgo_usuario COMMENT 'Suma de puntos de las reglas activadas, tope 100',
 # MAGIC   clasificacion_riesgo COMMENT 'Categoría de riesgo: Bajo, Moderado o Alto',
-# MAGIC   n_reglas_usuario,
-# MAGIC   reglas_fraude_usuario,
-# MAGIC   dia_sospechoso_negocio,
-# MAGIC   resenas_negocio_en_dia,
-# MAGIC   checkins_negocio_en_dia,
+# MAGIC   n_reglas_usuario COMMENT 'Cantidad de reglas de usuario activadas por el autor',
+# MAGIC   reglas_fraude_usuario COMMENT 'Reglas de usuario activadas por el autor, con nivel de riesgo y descripción',
+# MAGIC   dia_sospechoso_negocio COMMENT 'TRUE si el negocio tuvo una ráfaga sospechosa el día de la reseña',
+# MAGIC   resenas_negocio_en_dia COMMENT 'Reseñas recibidas por el negocio el día de la reseña',
+# MAGIC   checkins_negocio_en_dia COMMENT 'Check-ins recibidos por el negocio el día de la reseña',
 # MAGIC   ratio_resenas_checkins COMMENT 'Reseñas / check-ins de la ventana (valores muy altos sugieren fraude)',
 # MAGIC   promedio_estrellas_ventana COMMENT 'Calificación promedio obtenida en la ventana',
-# MAGIC   n_reglas_negocio,
-# MAGIC   reglas_fraude_negocio)
+# MAGIC   n_reglas_negocio COMMENT 'Cantidad de reglas de negocio activadas ese día',
+# MAGIC   reglas_fraude_negocio COMMENT 'Reglas de negocio activadas ese día, con nivel de riesgo y descripción')
 # MAGIC COMMENT 'Vista analítica Power BI: una fila por reseña, combinando temporalidad (gld_dim_fecha), perfil de fraude del usuario (gld_user_fraud_profile), reglas de usuario con descripción (gld_trust_governance) y anomalías/ráfagas del negocio en el día de la reseña (gld_business_anomaly_bursts). Grano: 1 fila = 1 reseña.'
 # MAGIC WITH SCHEMA COMPENSATION
 # MAGIC AS WITH reglas_usuario AS (

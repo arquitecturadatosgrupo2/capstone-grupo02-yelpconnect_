@@ -245,11 +245,43 @@ resources:
           min_retry_interval_millis: 60000
           retry_on_timeout: true
 
+        - task_key: GOLD_vista_power_bi
+          depends_on:
+            - task_key: GOLD_modelo_dimensional
+            - task_key: GOLD_trust_governance
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: ../E3_modelo_fisico/02_vista_power_bi.py
+            source: WORKSPACE
+          email_notifications:
+            on_failure:
+              - ${workspace.current_user.userName}
+          timeout_seconds: 600
+          max_retries: 1
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
+
+        - task_key: GOLD_vistas_consumo
+          depends_on:
+            - task_key: GOLD_vista_power_bi
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: ../E3_modelo_fisico/03_vistas_consumo.py
+            source: WORKSPACE
+          email_notifications:
+            on_failure:
+              - ${workspace.current_user.userName}
+          timeout_seconds: 600
+          max_retries: 1
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
+
         - task_key: MONITOREO_bitacora
           depends_on:
             - task_key: SILVER_tip
             - task_key: GOLD_modelo_dimensional
             - task_key: GOLD_trust_governance
+            - task_key: GOLD_vistas_consumo
           run_if: ALL_DONE
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/04_job_orquestacion.py

@@ -203,8 +203,12 @@ if vista_existe:
             "❌ falta la coma tras la entrada nueva de la lista de columnas"
         nueva_vista = nuevo.replace("CREATE VIEW", "CREATE OR REPLACE VIEW", 1)
 else:
-    print(f"⚠️ {VISTA} no existe en este entorno: crearla con E3_modelo_fisico/02_vista_power_bi tras la primera carga")
+    print(f"⚠️ {VISTA} no existe en este entorno: la crea la tarea GOLD_vista_power_bi al final de gold")
 
+COMENTARIOS_MIGRACION = {
+    "promedio_estrellas_historico": "Promedio histórico de calificaciones según el archivo fuente (no el promedio de la muestra; ninguna regla lo usa)",
+    "n_resenas_dia_registro": "Score input de la regla 4 (versión amplia): reseñas extremas de <250 caracteres escritas el día de registro del autor",
+}
 cols = set(spark.table(DESTINO).columns)
 primera_migracion = "promedio_estrellas_otorgadas" in cols
 if primera_migracion:
@@ -215,6 +219,9 @@ if primera_migracion:
 if "n_resenas_dia_registro" not in cols:
     spark.sql(f"ALTER TABLE {DESTINO} ADD COLUMN n_resenas_dia_registro INT")
     print("✔ Añadida n_resenas_dia_registro (score input de la regla 4)")
+# El DDL de E3 no se aplica sobre tablas existentes: los COMMENT de ambas columnas se fijan aquí
+for columna, comentario in COMENTARIOS_MIGRACION.items():
+    spark.sql(f"ALTER TABLE {DESTINO} ALTER COLUMN {columna} COMMENT '{comentario}'")
 
 if nueva_vista:
     try:
