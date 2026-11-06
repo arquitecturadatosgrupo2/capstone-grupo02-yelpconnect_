@@ -6,6 +6,9 @@
 # MAGIC
 # MAGIC Vistas analíticas para reportes, sobre el modelo dimensional y los productos de riesgo. No llevan máscaras
 # MAGIC propias: las columnas sensibles se enmascaran en sus tablas base.
+# MAGIC
+# MAGIC > **Trazabilidad —** este notebook **implementa** la sección 4 «Modelo de datos conceptual y lógico» y el canal
+# MAGIC > Power BI de la decisión ADR-09 (secciones 3.4 y 7) del **Documento Formal de Arquitectura de Datos**.
 
 # COMMAND ----------
 

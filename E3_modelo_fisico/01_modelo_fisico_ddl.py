@@ -12,9 +12,9 @@
 # MAGIC El DDL es **idempotente**: `CREATE TABLE IF NOT EXISTS` no toca tablas ya pobladas, y los `CHECK` se
 # MAGIC recrean con `DROP CONSTRAINT IF EXISTS` + `ADD CONSTRAINT`. Se puede re-ejecutar sin perder datos.
 # MAGIC
-# MAGIC > **Trazabilidad —** este entregable **implementa** la sección «Modelos conceptual y lógico» del
+# MAGIC > **Trazabilidad —** este entregable **implementa** la sección 4 «Modelo de datos conceptual y lógico» del
 # MAGIC > **Documento Formal de Arquitectura de Datos**. Este notebook es la materialización física de ese modelo: cada entidad y atributo del modelo lógico debe existir aquí como tabla y columna con su COMMENT.
-# MAGIC > Fuente del diseño: `YELP.sql` y `mapeo_equipo_02_utec.xlsx` (carpeta del grupo).
+# MAGIC > Fuente del diseño: `YELP_v2.sql` y el mapeo silver-gold v2 (carpeta del grupo, subcarpeta «Modelo fisico v2 (repo)»).
 
 # COMMAND ----------
 
@@ -334,12 +334,63 @@
 # MAGIC
 # MAGIC ALTER TABLE workspace.yelp_gold.gld_fact_resena DROP CONSTRAINT IF EXISTS chk_fact_calificacion;
 # MAGIC ALTER TABLE workspace.yelp_gold.gld_fact_resena ADD CONSTRAINT chk_fact_calificacion CHECK (calificacion BETWEEN 1 AND 5);
+# MAGIC
+# MAGIC -- Los productos de riesgo se crean antes que las dimensiones: sus FK informativas se declaran aquí
+# MAGIC ALTER TABLE workspace.yelp_gold.gld_user_fraud_profile DROP CONSTRAINT IF EXISTS fk_user_fraud_usuario;
+# MAGIC ALTER TABLE workspace.yelp_gold.gld_user_fraud_profile ADD CONSTRAINT fk_user_fraud_usuario
+# MAGIC   FOREIGN KEY (user_id) REFERENCES workspace.yelp_gold.gld_dim_usuario (user_id);
+# MAGIC ALTER TABLE workspace.yelp_gold.gld_business_anomaly_bursts DROP CONSTRAINT IF EXISTS fk_anomaly_negocio;
+# MAGIC ALTER TABLE workspace.yelp_gold.gld_business_anomaly_bursts ADD CONSTRAINT fk_anomaly_negocio
+# MAGIC   FOREIGN KEY (business_id) REFERENCES workspace.yelp_gold.gld_dim_negocio (business_id);
 
 # COMMAND ----------
 
 # DBTITLE 1,Validación automática del entregable (correr antes del PR)
-tablas = spark.sql("SHOW TABLES IN workspace.yelp_silver").collect()
-assert len(tablas) >= 5, "Deben existir al menos las 5 entidades en silver"
+TABLAS = {
+    "yelp_silver": {"slv_business", "slv_user", "slv_review", "slv_review_cuarentena", "slv_checkin", "slv_tip",
+                    "slv_trust_safety_area", "slv_fraud_rule"},
+    "yelp_gold": {"gld_user_fraud_profile", "gld_business_anomaly_bursts", "gld_trust_governance", "gld_dim_fecha",
+                  "gld_dim_negocio", "gld_dim_usuario", "gld_fact_resena", "gld_fact_checkin_diario"},
+}
+# La cuarentena guarda reseñas que pueden tener review_id nulo o repetido: no tiene PK a propósito
+SIN_PK = {"slv_review_cuarentena"}
+FK = {
+    "slv_review": {"fk_review_business", "fk_review_user"},
+    "slv_checkin": {"fk_checkin_business"},
+    "slv_tip": {"fk_tip_user", "fk_tip_business"},
+    "slv_fraud_rule": {"fk_fraud_rule_team"},
+    "gld_user_fraud_profile": {"fk_user_fraud_usuario"},
+    "gld_business_anomaly_bursts": {"fk_anomaly_negocio"},
+    "gld_fact_resena": {"fk_fact_resena_fecha", "fk_fact_resena_negocio", "fk_fact_resena_usuario"},
+    "gld_fact_checkin_diario": {"fk_fact_checkin_negocio", "fk_fact_checkin_fecha"},
+}
+CHECK = {
+    "yelp_silver.slv_business": {"chk_estrellas"},
+    "yelp_silver.slv_user": {"chk_promedio"},
+    "yelp_silver.slv_review": {"chk_calificacion"},
+    "yelp_silver.slv_review_cuarentena": {"chk_motivo"},
+    "yelp_silver.slv_fraud_rule": {"chk_risk_level", "chk_rule_status", "chk_entidad", "chk_puntos"},
+    "yelp_gold.gld_fact_resena": {"chk_fact_calificacion"},
+}
+# Desviación de la convención vw_<nombre>, ver «Decisiones de implementación»
+EXCEPCIONES_NOMBRE = {"gld_vw_fraude_resena"}
+
+objetos = spark.sql("""
+  SELECT table_schema, table_name, table_type, comment
+  FROM workspace.information_schema.tables
+  WHERE table_schema IN ('yelp_silver','yelp_gold')
+""").collect()
+
+# Cada entidad del modelo tiene su tabla, y no hay tablas fuera del modelo
+for schema, esperadas in TABLAS.items():
+    reales = {o.table_name for o in objetos if o.table_schema == schema and o.table_type != "VIEW"}
+    assert reales == esperadas, f"❌ {schema}: faltan {esperadas - reales}, sobran {reales - esperadas}"
+
+# Toda tabla y vista lleva COMMENT, y toda tabla nombra a su Data Owner
+sin_desc = [o.table_name for o in objetos if not o.comment]
+assert not sin_desc, f"❌ Objetos sin COMMENT: {sin_desc}"
+sin_owner = [o.table_name for o in objetos if o.table_type != "VIEW" and "Data Owner:" not in o.comment]
+assert not sin_owner, f"❌ Tablas que no nombran a su Data Owner: {sin_owner}"
 
 sin_comment = spark.sql("""
   SELECT table_name, column_name
@@ -348,15 +399,41 @@ sin_comment = spark.sql("""
     AND (comment IS NULL OR comment = '')
 """).collect()
 assert not sin_comment, f"❌ Columnas sin COMMENT (rompe E4): {[(r.table_name, r.column_name) for r in sin_comment]}"
-print("✔ Modelo físico validado: todas las columnas documentadas")
+
+# Convenciones de nombre
+mal_nombre = [o.table_name for o in objetos if o.table_name not in EXCEPCIONES_NOMBRE and not o.table_name.startswith(
+    "vw_" if o.table_type == "VIEW" else ("slv_" if o.table_schema == "yelp_silver" else "gld_"))]
+assert not mal_nombre, f"❌ Objetos fuera de la convención de nombres: {mal_nombre}"
+
+# PK y FK declaradas
+constraints = spark.sql("""
+  SELECT table_name, constraint_name, constraint_type
+  FROM workspace.information_schema.table_constraints
+  WHERE table_schema IN ('yelp_silver','yelp_gold')
+""").collect()
+con_pk = {c.table_name for c in constraints if c.constraint_type == "PRIMARY KEY"}
+sin_pk = (TABLAS["yelp_silver"] | TABLAS["yelp_gold"]) - SIN_PK - con_pk
+assert not sin_pk, f"❌ Tablas sin PK: {sin_pk}"
+for tabla, esperadas in FK.items():
+    faltan = esperadas - {c.constraint_name for c in constraints if c.table_name == tabla and c.constraint_type == "FOREIGN KEY"}
+    assert not faltan, f"❌ {tabla}: faltan las FK {faltan}"
+
+# CHECK exigidos (information_schema no los lista: viven en las propiedades de la tabla Delta)
+for tabla, esperados in CHECK.items():
+    props = {r.key for r in spark.sql(f"SHOW TBLPROPERTIES workspace.{tabla}").collect()}
+    faltan = {c for c in esperados if f"delta.constraints.{c}" not in props}
+    assert not faltan, f"❌ {tabla}: faltan los CHECK {faltan}"
+
+n_fk, n_check = sum(map(len, FK.values())), sum(map(len, CHECK.values()))
+print(f"✔ Modelo físico validado: {len(TABLAS['yelp_silver'])} tablas silver y {len(TABLAS['yelp_gold'])} gold, "
+      f"{len(con_pk)} PK, {n_fk} FK, {n_check} CHECK, todo con COMMENT y Data Owner")
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ### Decisiones de implementación
 # MAGIC - Silver en español y con los nombres del mapeo bronze → silver; gold renombrado a `gld_*` por convención
-# MAGIC   (en `YELP.sql` y el mapeo figuran como `fact_user_fraud_profile`, `fact_business_anomaly_bursts` y
-# MAGIC   `dim_trust_governance`: actualizar ambos documentos).
+# MAGIC   (las versiones v1 de `YELP.sql` y del mapeo usaban `fact_` y `dim_`; las copias v2 ya están alineadas).
 # MAGIC - `slv_checkin` a grano evento y llaves sustitutas determinísticas (`xxhash64`) en `slv_checkin` y `slv_tip`.
 # MAGIC - Los CHECK se declaran con `ALTER TABLE` separado del `CREATE` para que el notebook sea re-ejecutable.
 # MAGIC - `slv_fraud_rule` es un catálogo que gobierna gold: estado, umbral, mínimo de reseñas y puntos de cada regla
@@ -365,9 +442,28 @@ print("✔ Modelo físico validado: todas las columnas documentadas")
 # MAGIC - Esquema estrella en gold con prefijo `gld_dim_` / `gld_fact_`; dimensiones SCD tipo 1 con clave natural
 # MAGIC   (la muestra es una sola foto del origen: no hay historia que versionar). `gld_dim_usuario` excluye el nombre
 # MAGIC   y `gld_fact_resena` excluye el texto: gold no expone PII.
+# MAGIC - FK no declaradas a propósito: `gld_business_anomaly_bursts.fecha_ventana` es DATE y la PK de `gld_dim_fecha` es
+# MAGIC   `fecha_id`, así que se une por fecha sin FK; `gld_trust_governance` viene de silver y desnormaliza el equipo.
+# MAGIC - Orden de columnas: en el workspace, `n_resenas_dia_registro` está al final de `gld_user_fraud_profile` porque se
+# MAGIC   agregó por migración; este DDL la deja en la posición 10. No afecta la carga: `nb_gold_user_fraud_profile` alinea
+# MAGIC   las columnas por nombre antes de `insertInto`.
+# MAGIC - Desviación de nombre: `gld_vw_fraude_resena` no sigue `vw_<nombre>`. La usa el reporte de Power BI, así que el
+# MAGIC   renombrado se decide con su responsable; mientras tanto figura como excepción en el validador.
+# MAGIC
+# MAGIC ### Evidencia (2026-11-06)
+# MAGIC - **Catálogo vacío:** las 40 sentencias de este DDL corrieron dos veces seguidas, sin fallas, en dos schemas
+# MAGIC   temporales que se borraron al terminar. Frente al catálogo real coinciden tablas, columnas, tipos, nulabilidad,
+# MAGIC   comentarios, PK y FK; la única diferencia es el orden de columnas descrito arriba.
+# MAGIC - **Restricciones exigidas:** en esos schemas, `estrellas = 7` falló con `DELTA_VIOLATE_CONSTRAINT_WITH_VALUES` y un
+# MAGIC   `business_id` nulo con `DELTA_NOT_NULL_CONSTRAINT_VIOLATED`.
+# MAGIC - **Catálogo poblado:** la corrida `151650225860944` ejecutó este notebook completo, con su validador, sobre las
+# MAGIC   tablas reales. Las 16 tablas conservaron sus conteos de filas (por ejemplo, 399.453 reseñas y 160.993 perfiles).
+# MAGIC - **FK nuevas:** antes de declararlas, 0 perfiles sin usuario en `gld_dim_usuario` y 0 filas de ráfagas sin negocio
+# MAGIC   en `gld_dim_negocio`.
 # MAGIC
 # MAGIC ### Definition of Done (E3)
-# MAGIC - [x] DDL completo de silver (7 entidades) y gold (3 productos de datos + estrella de 3 dims y 2 facts).
-# MAGIC - [ ] 100% de columnas con COMMENT (la celda de validación pasa).
+# MAGIC - [x] DDL completo de silver (7 entidades y cuarentena) y gold (3 productos de datos + estrella de 3 dims y 2 facts).
+# MAGIC - [x] 100% de tablas y columnas con COMMENT, y toda tabla nombra a su Data Owner (la celda de validación pasa).
 # MAGIC - [x] PK/FK declaradas y CHECK donde el negocio lo exige.
+# MAGIC - [x] El DDL corre sobre un catálogo vacío y re-ejecutado no cambia datos (ver «Evidencia»).
 # MAGIC - [ ] Captura del diagrama de lineage/ER de Catalog Explorer en `img/`.

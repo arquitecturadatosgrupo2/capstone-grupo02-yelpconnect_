@@ -6,6 +6,9 @@
 # MAGIC
 # MAGIC La tarea `GOLD_vista_power_bi` del job la crea o actualiza después de gold. En entornos existentes, la celda de
 # MAGIC migración de `nb_gold_user_fraud_profile` mantiene la vista alineada con el esquema de la tabla.
+# MAGIC
+# MAGIC > **Trazabilidad —** este notebook **implementa** la sección 4 «Modelo de datos conceptual y lógico» y el canal
+# MAGIC > Power BI de la decisión ADR-09 (secciones 3.4 y 7) del **Documento Formal de Arquitectura de Datos**.
 
 # COMMAND ----------
 
