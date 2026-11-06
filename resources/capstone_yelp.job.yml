@@ -177,6 +177,9 @@ resources:
             - task_key: SILVER_user
             - task_key: SILVER_review
             - task_key: SILVER_fraud_rule
+            # La regla 4 lee las ráfagas y la verificación cruzada lee el modelo dimensional
+            - task_key: GOLD_business_anomaly_bursts
+            - task_key: GOLD_modelo_dimensional
           run_if: ALL_SUCCESS
           notebook_task:
             notebook_path: ../E7_pipeline_lakehouse/pipelines/nb_gold_user_fraud_profile.py

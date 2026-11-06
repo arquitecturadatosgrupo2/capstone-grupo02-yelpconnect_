@@ -81,7 +81,7 @@ print(f"✔ {DESTINO}: {r.filas} reglas ({r.activas} activas) · PK única · eq
 # MAGIC - Textos de dominio en minúsculas antes de insertar: así un `Activa` o un `ALTO` de la semilla cumple los CHECK.
 # MAGIC   Un valor fuera de dominio (por ejemplo `activo`) **hace fallar la carga**: una regla mal escrita no se
 # MAGIC   apaga en silencio.
-# MAGIC - `umbral` tiene un significado propio en cada regla (reseñas por día, porcentaje, días, multiplicador, ratio);
+# MAGIC - `umbral` tiene un significado propio en cada regla (reseñas por día, porcentaje, multiplicador, ratio);
 # MAGIC   la descripción de la regla lo explica en lenguaje de negocio.
 # MAGIC - La FK `team_id → slv_trust_safety_area` se valida aquí porque en Unity Catalog es solo informativa.
 # MAGIC   Este notebook depende de que `slv_trust_safety_area` esté cargada.

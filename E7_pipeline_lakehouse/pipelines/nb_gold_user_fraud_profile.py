@@ -123,23 +123,19 @@ senales = (por_resena
 # Rediseños verificados contra gold (auditoría 2026-11-02, volúmenes reproducidos):
 #   R2 — "todas 1★ o todas 5★" se evalúa con MIN = MAX sobre las MISMAS reseñas de la muestra; el promedio
 #        histórico del archivo fuente mezcla poblaciones (coincide con la muestra solo en el 21% de usuarios)
-#        y ya no se usa en ninguna condición. Piso de 5 reseñas (definición auditada).
+#        y ya no se usa en ninguna condición.
 #   R4 — edad de cuenta medida a la fecha de la reseña: reseña extrema de <250 caracteres escrita el día de
 #        registro del autor, dentro de una ventana con ráfaga marcada. La versión amplia es solo score input.
-#   R7 — piso de 5 reseñas y ≥80% de calificaciones extremas (definición auditada).
+#   R7 — sin amigos ni fans, con mínimo de reseñas y porcentaje de calificaciones extremas (umbral del catálogo).
 CONDICIONES = {
     # fraud_rule_id: (parámetros obligatorios, condición en función de la fila del catálogo)
-    1: ({"umbral"}, lambda r: (F.col("max_resenas_en_un_dia") >= r.umbral)
-                             & (F.col("total_resenas") >= (r.min_resenas or 0))),
-    2: (set(),      lambda r: (F.col("min_calificacion") == F.col("max_calificacion"))
-                              & F.col("min_calificacion").isin(1, 5)
-                              & (F.col("total_resenas") >= 5)),
-    3: ({"umbral"}, lambda r: (F.col("porcentaje_calificaciones_extremas") > r.umbral)
-                             & (F.col("total_resenas") >= (r.min_resenas or 0))),
+    1: ({"umbral"}, lambda r: F.col("max_resenas_en_un_dia") >= r.umbral),
+    2: ({"min_resenas"}, lambda r: (F.col("min_calificacion") == F.col("max_calificacion"))
+                                   & F.col("min_calificacion").isin(1, 5)),
+    3: ({"umbral"}, lambda r: F.col("porcentaje_calificaciones_extremas") > r.umbral),
     4: (set(),      lambda r: F.col("es_dia_registro_en_rafaga")),
-    7: (set(),      lambda r: (F.col("amigos_count") == 0) & (F.col("fans_count") == 0)
-                              & (F.col("total_resenas") >= 5)
-                              & (F.col("porcentaje_calificaciones_extremas") >= 80)),
+    7: ({"umbral", "min_resenas"}, lambda r: (F.col("amigos_count") == 0) & (F.col("fans_count") == 0)
+                                             & (F.col("porcentaje_calificaciones_extremas") >= r.umbral)),
 }
 
 catalogo = spark.table(f"{SLV}.slv_fraud_rule").filter("entidad = 'usuario' AND rule_status = 'activa'").collect()
@@ -153,7 +149,7 @@ for r in (x for x in catalogo if x.fraud_rule_id in CONDICIONES):
     requeridos, condicion = CONDICIONES[r.fraud_rule_id]
     faltan = [p for p in requeridos if getattr(r, p) is None]
     assert not faltan, f"❌ La regla {r.fraud_rule_id} está activa pero le falta {faltan} en el catálogo"
-    cond = condicion(r)   # R1/R3 toman el piso del catálogo; R2/R4/R7 lo traen en su definición auditada
+    cond = condicion(r) & (F.col("total_resenas") >= (r.min_resenas or 0))
     score = score + F.when(cond, F.lit(r.puntos or 0)).otherwise(0)
     activadas.append(F.when(cond, F.lit(r.fraud_rule_id)))
 
@@ -169,29 +165,21 @@ gld = (senales
 
 # COMMAND ----------
 
-# DBTITLE 1,Migración de esquema, vista consumidora y gobernanza (idempotente)
-# ── Migración idempotente (auditoría 2026-11-02): esquema + vista consumidora + gobernanza ──
+# DBTITLE 1,Migración de esquema y vista consumidora (idempotente)
+# ── Migración idempotente (auditoría 2026-11-02): esquema + vista consumidora ──
 # Debe correr ANTES de la escritura: el promedio del archivo fuente se llamaba
 # "promedio_estrellas_otorgadas", sugiriendo el promedio de la muestra (coincide solo en el 21% de
 # usuarios). Se renombra para que ninguna regla ni reporte mezcle poblaciones.
-cols = set(spark.table(DESTINO).columns)
-primera_migracion = "promedio_estrellas_otorgadas" in cols
-if primera_migracion:
-    # El renombrado de columnas en Delta requiere column mapping (protocolo ≥ 2,5): se habilita una sola vez.
-    spark.sql(f"ALTER TABLE {DESTINO} SET TBLPROPERTIES ('delta.columnMapping.mode' = 'name')")
-    spark.sql(f"ALTER TABLE {DESTINO} RENAME COLUMN promedio_estrellas_otorgadas TO promedio_estrellas_historico")
-    print("✔ Renombrada promedio_estrellas_otorgadas → promedio_estrellas_historico")
-if "n_resenas_dia_registro" not in cols:
-    spark.sql(f"ALTER TABLE {DESTINO} ADD COLUMN n_resenas_dia_registro INT")
-    print("✔ Añadida n_resenas_dia_registro (score input de la regla 4)")
-
-# gld_vw_fraude_resena es el único consumidor de la columna renombrada. Se actualiza por cirugía sobre
-# su DDL almacenado (SHOW CREATE TABLE). Ese DDL trae DOS lados: la lista de columnas con COMMENT y el
-# SELECT; la cirugía toca AMBOS en la MISMA posición (nombre en la lista + expresión u.<columna>), o el
+#
+# gld_vw_fraude_resena es el único consumidor directo de la columna renombrada. Se actualiza por cirugía
+# sobre su DDL almacenado (SHOW CREATE TABLE). Ese DDL trae DOS lados: la lista de columnas con COMMENT y
+# el SELECT; la cirugía toca AMBOS en la MISMA posición (nombre en la lista + expresión u.<columna>), o el
 # alias quedaría desalineado. La nueva definición se construye y valida ANTES de tocar el esquema, y si
 # el CREATE falla se revierte el renombrado para no dejar la vista rota para Power BI.
 VISTA = f"{GOLD}.gld_vw_fraude_resena"
-if spark.catalog.tableExists(VISTA):
+vista_existe = spark.catalog.tableExists(VISTA)
+nueva_vista = None
+if vista_existe:
     vdef = spark.sql(f"SHOW CREATE TABLE {VISTA}").first()[0]
     nuevo = vdef.replace("promedio_estrellas_otorgadas", "promedio_estrellas_historico")
     if "n_resenas_dia_registro" in nuevo:
@@ -213,44 +201,33 @@ if spark.catalog.tableExists(VISTA):
         # PARSE_SYNTAX_ERROR en la columna siguiente (desviacion_estandar_estrellas)
         assert "escritas el día de registro del autor',\n" in nuevo, \
             "❌ falta la coma tras la entrada nueva de la lista de columnas"
-        nuevo = nuevo.replace("CREATE VIEW", "CREATE OR REPLACE VIEW", 1)
-        try:
-            spark.sql(nuevo)
-            print("✔ gld_vw_fraude_resena actualizada (renombrado + n_resenas_dia_registro, lista y SELECT alineados)")
-        except Exception:
-            # revertir el renombrado de esta corrida: la vista vieja vuelve a resolver y Power BI no se rompe
-            if "promedio_estrellas_otorgadas" in vdef:
-                spark.sql(f"ALTER TABLE {DESTINO} RENAME COLUMN promedio_estrellas_historico TO promedio_estrellas_otorgadas")
-            raise
+        nueva_vista = nuevo.replace("CREATE VIEW", "CREATE OR REPLACE VIEW", 1)
+else:
+    print(f"⚠️ {VISTA} no existe en este entorno: crearla con E3_modelo_fisico/02_vista_power_bi tras la primera carga")
+
+cols = set(spark.table(DESTINO).columns)
+primera_migracion = "promedio_estrellas_otorgadas" in cols
+if primera_migracion:
+    # El renombrado de columnas en Delta requiere column mapping (protocolo ≥ 2,5): se habilita una sola vez.
+    spark.sql(f"ALTER TABLE {DESTINO} SET TBLPROPERTIES ('delta.columnMapping.mode' = 'name')")
+    spark.sql(f"ALTER TABLE {DESTINO} RENAME COLUMN promedio_estrellas_otorgadas TO promedio_estrellas_historico")
+    print("✔ Renombrada promedio_estrellas_otorgadas → promedio_estrellas_historico")
+if "n_resenas_dia_registro" not in cols:
+    spark.sql(f"ALTER TABLE {DESTINO} ADD COLUMN n_resenas_dia_registro INT")
+    print("✔ Añadida n_resenas_dia_registro (score input de la regla 4)")
+
+if nueva_vista:
+    try:
+        spark.sql(nueva_vista)
+        print("✔ gld_vw_fraude_resena actualizada (renombrado + n_resenas_dia_registro, lista y SELECT alineados)")
+    except Exception:
+        # revertir el renombrado de esta corrida: la vista vieja vuelve a resolver y Power BI no se rompe
+        if primera_migracion:
+            spark.sql(f"ALTER TABLE {DESTINO} RENAME COLUMN promedio_estrellas_historico TO promedio_estrellas_otorgadas")
+        raise
+if vista_existe:
     assert "n_resenas_dia_registro" in spark.table(VISTA).columns, \
         "❌ la señal n_resenas_dia_registro no quedó expuesta en la vista: revisar su SELECT manualmente"
-else:
-    print(f"⚠️ {VISTA} no existe en este entorno: crearla tras la primera carga")
-
-# gld_trust_governance NO se escribe aquí: la tarea GOLD_trust_governance del job (nb_gold_trust_governance,
-# que corre DESPUÉS de este notebook) la reconstruye desde slv_fraud_rule en cada corrida — un UPDATE directo
-# se sobreescribiría minutos después. Las definiciones de R2/R4/R7 se sincronizan en el catálogo silver
-# (pendiente de Trust & Safety); aquí solo se AVISA si la tabla aún refleja la versión previa a la auditoría.
-# La transformación se define fuera y la acción (collect) va dentro del try: si la lectura falla
-# (p. ej. permisos), se avisa y no detiene la carga.
-gobernanza_q = (spark.table(f"{GOLD}.gld_trust_governance")
-    .where(F.col("fraud_rule_id").isin(2, 4, 7))
-    .select("fraud_rule_id", "fraud_description", "risk_level"))
-try:
-    gobernanza = gobernanza_q.collect()
-    marcadores = {2: ("MIN=MAX", "todas 1"), 4: ("ráfaga",), 7: ("sin amigos", "amigos y fans")}
-    for r in gobernanza:
-        desfasada = (not any(m in (r.fraud_description or "") for m in marcadores[r.fraud_rule_id])
-                     or (r.fraud_rule_id == 7 and r.risk_level != "medio"))
-        if desfasada:
-            print(f"⚠️ gld_trust_governance, regla {r.fraud_rule_id}: definición previa a la auditoría "
-                  f"2026-11-02 — sincronizar slv_fraud_rule (la tarea GOLD_trust_governance la replica desde ahí)")
-except Exception as e:
-    print(f"⚠️ No se pudo verificar gld_trust_governance contra la auditoría: {e}")
-
-# slv_fraud_rule sigue con min_resenas=10 en R2/R7: pendiente de aprobación por Trust & Safety,
-# por eso el piso auditado (5) vive en la celda de score y no en el catálogo.
-
 
 # COMMAND ----------
 
@@ -289,18 +266,6 @@ assert spark.table(DESTINO).count() == r.filas, "❌ la tabla física no refleja
 print(f"✔ {DESTINO}: {r.filas:,} usuarios · PK única · cobertura total de {autores:,} autores · riesgo {dist}")
 print(f"✔ Casos por regla (auditoría esperaba R2=479, R4=43, R7=477): {por_regla}")
 print(f"✔ Score input regla 4, versión amplia (auditoría esperaba 3,728): {amplios:,} usuarios")
-
-# Sincronizar n_casos_marcados de las reglas de usuario en gld_trust_governance: son los mismos valores que
-# recalcula la tarea GOLD_trust_governance desde reglas_activadas, así la tabla queda al día aunque esa tarea falle.
-try:
-    sync = {rid: por_regla.get(rid, 0) for rid in sorted({c.fraud_rule_id for c in catalogo} | set(por_regla))}
-    for rid, casos in sync.items():
-        spark.sql(f"UPDATE workspace.yelp_gold.gld_trust_governance "
-                  f"SET n_casos_marcados = {casos}, fecha_actualizacion = current_timestamp() "
-                  f"WHERE fraud_rule_id = {rid}")
-    print(f"✔ gld_trust_governance.n_casos_marcados sincronizado: {sync}")
-except Exception as e:
-    print(f"⚠️ gld_trust_governance no se pudo sincronizar (se requiere MODIFY): {e}")
 
 # COMMAND ----------
 
@@ -354,29 +319,19 @@ for k, esperado in esperados.items():
 # MAGIC   `slv_review` (la muestra). `promedio_estrellas_historico` (antes `promedio_estrellas_otorgadas`) es el promedio
 # MAGIC   histórico del archivo fuente — coincide con el de la muestra solo en el 21% de usuarios — y NINGUNA regla lo usa.
 # MAGIC - Desviación con `stddev_samp`: nula con una sola reseña, para no marcar como bot a quien escribió una vez.
-# MAGIC - Reglas rediseñadas (volúmenes verificados contra gold el 2026-11-02):
-# MAGIC   - **R2** (29 → 479): 5+ reseñas, todas 1★ o todas 5★, con `MIN = MAX` sobre las mismas reseñas. El piso de 5
-# MAGIC     es parte de la definición: pendiente sincronizar `min_resenas` (10 → 5) en `slv_fraud_rule`.
+# MAGIC - Reglas rediseñadas y aprobadas por Trust & Safety (volúmenes verificados contra gold el 2026-11-02):
+# MAGIC   - **R2** (29 → 479): 5+ reseñas, todas 1★ o todas 5★, con `MIN = MAX` sobre las mismas reseñas.
 # MAGIC   - **R4** (0 → 43): reseña extrema de <250 caracteres escrita el día de registro del autor, dentro de una
-# MAGIC     ventana con ráfaga marcada (LEE `gld_business_anomaly_bursts`). ⚠️ el job aún NO declara esa dependencia:
-# MAGIC     la tarea `GOLD_user_fraud_profile` no tiene depends_on hacia `GOLD_business_anomaly_bursts` (ambas corren
-# MAGIC     en paralelo tras el DQ gate) — agregarla en el bundle y redesplegar, o en un entorno nuevo la regla 4
-# MAGIC     marcaría 0 en silencio.
+# MAGIC     ventana con ráfaga marcada (LEE `gld_business_anomaly_bursts`, declarada en el depends_on de la tarea).
 # MAGIC     La versión amplia (3,728 usuarios) queda como score input (`n_resenas_dia_registro`) y no puntúa.
-# MAGIC   - **R7** (182 → 477): 0 amigos, 0 fans, 5+ reseñas y ≥80% de calificaciones extremas. El paso a riesgo `medio`
-# MAGIC     y las definiciones de R2/R4/R7 se sincronizan en `slv_fraud_rule` (pendiente de Trust & Safety): la tarea
-# MAGIC     `GOLD_trust_governance` del job reconstruye `gld_trust_governance` desde el catálogo silver en cada corrida,
-# MAGIC     así que la celda de migración no escribe esa tabla — solo AVISA si sus definiciones siguen siendo las
-# MAGIC     previas a la auditoría.
+# MAGIC   - **R7** (182 → 477): 0 amigos, 0 fans, 5+ reseñas y ≥80% de calificaciones extremas, riesgo `medio`.
 # MAGIC - `antiguedad_dias` se sigue midiendo contra la fecha actual (lo exige el mapeo); la regla 4 ya no la usa.
-# MAGIC - El score aplica las reglas de usuario **activas** de `slv_fraud_rule`; R1 y R3 siguen tomando umbral y piso del
-# MAGIC   catálogo; en R2/R4/R7 el piso es parte de la definición auditada. Tope de 100.
-# MAGIC - `reglas_activadas` guarda el linaje regla → caso: la validación sincroniza `n_casos_marcados` en
-# MAGIC   `gld_trust_governance` en cada corrida (los mismos valores que recalcula la tarea `GOLD_trust_governance`
-# MAGIC   desde `reglas_activadas`, así la tabla queda al día aunque esa tarea falle). La definición canónica de
-# MAGIC   `gld_vw_fraude_resena` vive en la celda de migración (se actualiza por cirugía sobre su DDL almacenado,
-# MAGIC   tocando lista de columnas y SELECT en la MISMA posición — anclas verificadas contra el DDL real el
-# MAGIC   2026-11-02 — y revirtiendo el renombrado si el CREATE falla, para no romper el consumo de Power BI).
+# MAGIC - El score aplica las reglas de usuario **activas** de `slv_fraud_rule`, con el umbral, el mínimo de reseñas y
+# MAGIC   los puntos del catálogo; el código define solo la forma de cada regla. Tope de 100.
+# MAGIC - `reglas_activadas` guarda el linaje regla → caso que consume `gld_trust_governance`.
+# MAGIC - `gld_vw_fraude_resena` se define en `E3_modelo_fisico/02_vista_power_bi`. La celda de migración la ajusta por
+# MAGIC   cirugía en entornos existentes, tocando lista de columnas y SELECT en la MISMA posición, y revierte el
+# MAGIC   renombrado si el CREATE falla, para no romper el consumo de Power BI.
 # MAGIC - El DDL de E3 quedó alineado con el esquema auditado (renombrado + `n_resenas_dia_registro`); la celda de
 # MAGIC   migración ajusta en caliente las tablas ya creadas en entornos existentes.
 # MAGIC - Una regla activa sin implementación se avisa y no puntúa; una regla activa a la que le falta un parámetro
@@ -385,13 +340,8 @@ for k, esperado in esperados.items():
 # MAGIC   conjunto de validación etiquetado de la auditoría.
 # MAGIC
 # MAGIC ### Definition of Done (gld_user_fraud_profile)
-# MAGIC - [ ] Corre de inicio a fin y la validación pasa — **pendiente de ejecutar vía el job**: el job corre con la
-# MAGIC       identidad de mateomirandah (dueño del bundle, con acceso a silver). La sesión interactiva de
-# MAGIC       arquitecturadatos es solo-lectura-gold por diseño de gobierno (verificado 2026-11-02), así que la carga y
-# MAGIC       la sincronización de gobernanza se completan disparando el job, no desde este editor.
-# MAGIC - [x] Cambios de código de la auditoría 2026-11-02 aplicados (P0 cobertura, R2/R4/R7, renombrado, vista
-# MAGIC       y gobernanza) — la ejecución queda pendiente de disparar el job con la identidad del dueño del bundle.
-# MAGIC - [ ] Sincronizar `slv_fraud_rule` con Trust & Safety (`min_resenas` 10 → 5 en R2/R7).
-# MAGIC - [ ] Agregar depends_on `GOLD_business_anomaly_bursts` a la tarea `GOLD_user_fraud_profile` del job
-# MAGIC       (bundle) y redesplegar: la regla 4 lee las ráfagas y el DAG actual no garantiza el orden.
-# MAGIC - [ ] Pesos del score y cortes de clasificación aprobados por el Data Owner (Trust & Safety).
+# MAGIC - [x] Migración y reglas auditadas ejecutadas por el job: corrida `746627469011284` (14 tareas en SUCCESS).
+# MAGIC       En gold: 160,993 perfiles, R2=479, R4=43, R7=477 y score input amplio=3,728.
+# MAGIC - [x] Reglas R2/R4/R7 aprobadas por Trust & Safety y sincronizadas en `datos/semillas/fraud_rule.csv`.
+# MAGIC - [ ] Subir la semilla a `raw/semillas/`, redesplegar el bundle y correr el job con el catálogo actualizado.
+# MAGIC - [ ] Cortes de clasificación aprobados por el Data Owner (Trust & Safety).
