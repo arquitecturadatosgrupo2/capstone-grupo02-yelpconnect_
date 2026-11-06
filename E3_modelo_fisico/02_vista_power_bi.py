@@ -4,7 +4,7 @@
 # MAGIC Una fila por reseña, con temporalidad, perfil de fraude del usuario, reglas con descripción y anomalías del
 # MAGIC negocio en el día. Definición tomada del workspace (`SHOW CREATE TABLE`, 2026-11-05).
 # MAGIC
-# MAGIC Se ejecuta a mano tras la primera carga de gold; no forma parte del job. En entornos existentes, la celda de
+# MAGIC La tarea `GOLD_vista_power_bi` del job la crea o actualiza después de gold. En entornos existentes, la celda de
 # MAGIC migración de `nb_gold_user_fraud_profile` mantiene la vista alineada con el esquema de la tabla.
 
 # COMMAND ----------

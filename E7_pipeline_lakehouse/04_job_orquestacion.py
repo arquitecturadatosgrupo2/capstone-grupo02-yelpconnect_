@@ -21,9 +21,10 @@
 # MAGIC                   ├─► SILVER_checkin ──────────────────────┴─► GOLD_modelo_dimensional ─────┼──────────────────────────┼─► MONITOREO_bitacora
 # MAGIC                   └─► SILVER_tip ──────────────────────────────────────────────────────────────────────────────────┘    (corre siempre)
 # MAGIC BRONZE_simulados ─► SILVER_trust_safety_area ─► SILVER_fraud_rule ─► (gold de Trust & Safety)
+# MAGIC GOLD_modelo_dimensional + GOLD_trust_governance ─► GOLD_vista_power_bi ─► GOLD_vistas_consumo ─► MONITOREO_bitacora
 # MAGIC ```
 # MAGIC Configuración evaluada:
-# MAGIC - [x] 15 tareas con dependencias (no un solo notebook gigante). `DQ_gate` (E5) corre entre silver y gold:
+# MAGIC - [x] 17 tareas con dependencias (no un solo notebook gigante). `DQ_gate` (E5) corre entre silver y gold:
 # MAGIC   si falla una regla crítica, gold no se publica.
 # MAGIC - [x] Retries: 1 reintento por tarea, 60 s después de la falla, también si la falla es por timeout. El gate no
 # MAGIC   se reintenta: con los mismos datos fallaría igual.
@@ -87,6 +88,10 @@ TABLAS = {
     "GOLD_modelo_dimensional":      ["yelp_gold.gld_dim_fecha", "yelp_gold.gld_dim_negocio", "yelp_gold.gld_dim_usuario",
                                      "yelp_gold.gld_fact_resena", "yelp_gold.gld_fact_checkin_diario"],
     "GOLD_trust_governance":        ["yelp_gold.gld_trust_governance"],
+    "GOLD_vista_power_bi":          ["yelp_gold.gld_vw_fraude_resena"],
+    "GOLD_vistas_consumo":          ["yelp_gold.vw_vista_principal_resenas", "yelp_gold.vw_analisis_fraude_resenas",
+                                     "yelp_gold.vw_analisis_usuarios_riesgo", "yelp_gold.vw_analisis_negocios_sospechosos",
+                                     "yelp_gold.vw_metricas_resenas_mensuales"],
 }
 
 if not job_run_id or not job_run_id.isdigit():

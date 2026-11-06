@@ -203,7 +203,7 @@ if vista_existe:
             "❌ falta la coma tras la entrada nueva de la lista de columnas"
         nueva_vista = nuevo.replace("CREATE VIEW", "CREATE OR REPLACE VIEW", 1)
 else:
-    print(f"⚠️ {VISTA} no existe en este entorno: crearla con E3_modelo_fisico/02_vista_power_bi tras la primera carga")
+    print(f"⚠️ {VISTA} no existe en este entorno: la crea la tarea GOLD_vista_power_bi al final de gold")
 
 cols = set(spark.table(DESTINO).columns)
 primera_migracion = "promedio_estrellas_otorgadas" in cols
