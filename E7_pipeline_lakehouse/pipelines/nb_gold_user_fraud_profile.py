@@ -340,8 +340,7 @@ for k, esperado in esperados.items():
 # MAGIC   conjunto de validación etiquetado de la auditoría.
 # MAGIC
 # MAGIC ### Definition of Done (gld_user_fraud_profile)
-# MAGIC - [x] Migración y reglas auditadas ejecutadas por el job: corrida `746627469011284` (14 tareas en SUCCESS).
-# MAGIC       En gold: 160,993 perfiles, R2=479, R4=43, R7=477 y score input amplio=3,728.
-# MAGIC - [x] Reglas R2/R4/R7 aprobadas por Trust & Safety y sincronizadas en `datos/semillas/fraud_rule.csv`.
-# MAGIC - [ ] Subir la semilla a `raw/semillas/`, redesplegar el bundle y correr el job con el catálogo actualizado.
+# MAGIC - [x] Corre de inicio a fin con el catálogo aprobado: corrida `233714860388458` del 2026-11-05 (14 tareas en
+# MAGIC       SUCCESS). En gold: 160,993 perfiles, R2=479, R4=43, R7=477 y score input amplio=3,728.
+# MAGIC - [x] Reglas R2/R4/R7 aprobadas por Trust & Safety y sincronizadas en `slv_fraud_rule`.
 # MAGIC - [ ] Cortes de clasificación aprobados por el Data Owner (Trust & Safety).
