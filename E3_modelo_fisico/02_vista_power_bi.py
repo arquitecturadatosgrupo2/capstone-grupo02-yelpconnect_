@@ -1,11 +1,14 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # E3 · Vista analítica para Power BI: `gld_vw_fraude_resena`
+# MAGIC # E3 · Vista analítica para Power BI: `vw_fraude_resena`
 # MAGIC Una fila por reseña, con temporalidad, perfil de fraude del usuario, reglas con descripción y anomalías del
 # MAGIC negocio en el día. Definición tomada del workspace (`SHOW CREATE TABLE`, 2026-11-05).
 # MAGIC
 # MAGIC La tarea `GOLD_vista_power_bi` del job la crea o actualiza después de gold. En entornos existentes, la celda de
 # MAGIC migración de `nb_gold_user_fraud_profile` mantiene la vista alineada con el esquema de la tabla.
+# MAGIC
+# MAGIC Antes se llamaba `gld_vw_fraude_resena`, fuera de la convención `vw_<nombre>`. La vista antigua sigue en el workspace,
+# MAGIC sin versionar, hasta que el reporte de Power BI lea el nombre nuevo; después se borra con `DROP VIEW`.
 # MAGIC
 # MAGIC > **Trazabilidad —** este notebook **implementa** la sección 4 «Modelo de datos conceptual y lógico» y el canal
 # MAGIC > Power BI de la decisión ADR-09 (secciones 3.4 y 7) del **Documento Formal de Arquitectura de Datos**.
@@ -13,7 +16,7 @@
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC CREATE OR REPLACE VIEW workspace.yelp_gold.gld_vw_fraude_resena (
+# MAGIC CREATE OR REPLACE VIEW workspace.yelp_gold.vw_fraude_resena (
 # MAGIC   review_id COMMENT 'Identificador único de la reseña (grano del hecho)',
 # MAGIC   user_id COMMENT 'FK a gld_dim_usuario: autor de la reseña',
 # MAGIC   business_id COMMENT 'FK a gld_dim_negocio: negocio reseñado',

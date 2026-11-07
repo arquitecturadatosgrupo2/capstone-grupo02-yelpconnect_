@@ -372,7 +372,7 @@ CHECK = {
     "yelp_silver.slv_fraud_rule": {"chk_risk_level", "chk_rule_status", "chk_entidad", "chk_puntos"},
     "yelp_gold.gld_fact_resena": {"chk_fact_calificacion"},
 }
-# Desviación de la convención vw_<nombre>, ver «Decisiones de implementación»
+# Temporal: nombre antiguo de vw_fraude_resena, ver «Decisiones de implementación». Quitar al borrar la vista.
 EXCEPCIONES_NOMBRE = {"gld_vw_fraude_resena"}
 
 objetos = spark.sql("""
@@ -447,8 +447,9 @@ print(f"✔ Modelo físico validado: {len(TABLAS['yelp_silver'])} tablas silver 
 # MAGIC - Orden de columnas: en el workspace, `n_resenas_dia_registro` está al final de `gld_user_fraud_profile` porque se
 # MAGIC   agregó por migración; este DDL la deja en la posición 10. No afecta la carga: `nb_gold_user_fraud_profile` alinea
 # MAGIC   las columnas por nombre antes de `insertInto`.
-# MAGIC - Desviación de nombre: `gld_vw_fraude_resena` no sigue `vw_<nombre>`. La usa el reporte de Power BI, así que el
-# MAGIC   renombrado se decide con su responsable; mientras tanto figura como excepción en el validador.
+# MAGIC - `gld_vw_fraude_resena` pasó a `vw_fraude_resena` por la convención `vw_<nombre>` (2026-11-06, decisión del Steward).
+# MAGIC   La vista antigua sigue en el workspace, como excepción temporal del validador, hasta que el reporte de Power BI
+# MAGIC   lea el nombre nuevo. Ya nadie la actualiza: al cambiar el reporte se borra y se quita la excepción.
 # MAGIC
 # MAGIC ### Evidencia (2026-11-06)
 # MAGIC - **Catálogo vacío:** las 40 sentencias de este DDL corrieron dos veces seguidas, sin fallas, en dos schemas

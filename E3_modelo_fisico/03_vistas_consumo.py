@@ -2,7 +2,7 @@
 # MAGIC %md
 # MAGIC # E3 · Vistas de consumo sobre gold
 # MAGIC **Tarea del job:** `GOLD_vistas_consumo`, después de `GOLD_vista_power_bi`, porque `vw_analisis_fraude_resenas`
-# MAGIC lee `gld_vw_fraude_resena`.
+# MAGIC lee `vw_fraude_resena`.
 # MAGIC
 # MAGIC Vistas analíticas para reportes, sobre el modelo dimensional y los productos de riesgo. No llevan máscaras
 # MAGIC propias: las columnas sensibles se enmascaran en sus tablas base.
@@ -139,7 +139,7 @@
 # MAGIC   promedio_estrellas_ventana COMMENT 'Calificación promedio obtenida en la ventana',
 # MAGIC   n_reglas_negocio COMMENT 'Cantidad de reglas de negocio activadas ese día',
 # MAGIC   reglas_fraude_negocio COMMENT 'Reglas de negocio activadas ese día, con nivel de riesgo y descripción')
-# MAGIC COMMENT 'Vista de fraude: expone gld_vw_fraude_resena para análisis, una fila por reseña'
+# MAGIC COMMENT 'Vista de fraude: expone vw_fraude_resena para análisis, una fila por reseña'
 # MAGIC AS SELECT
 # MAGIC     review_id,
 # MAGIC     user_id,
@@ -180,7 +180,7 @@
 # MAGIC     promedio_estrellas_ventana,
 # MAGIC     n_reglas_negocio,
 # MAGIC     reglas_fraude_negocio
-# MAGIC FROM workspace.yelp_gold.gld_vw_fraude_resena
+# MAGIC FROM workspace.yelp_gold.vw_fraude_resena
 
 # COMMAND ----------
 
