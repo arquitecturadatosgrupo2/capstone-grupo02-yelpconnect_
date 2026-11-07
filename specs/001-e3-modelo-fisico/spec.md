@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-24
 
-**Status**: Draft
+**Status**: Implementada (2026-11-06); pendiente borrar la vista antigua `gld_vw_fraude_resena` cuando Power BI lea `vw_fraude_resena`
 
 **Input**: User description: "Para cada entregable de este proyecto, genera las specs necesarias" — entregable E3 (Modelo físico, M4 Modelado Avanzado).
 
@@ -108,7 +108,7 @@ El Ingeniero de datos necesita poder re-ejecutar el DDL sobre tablas ya pobladas
 
 ## Assumptions
 
-- El modelo lógico vigente es el de `YELP.sql` y `mapeo_equipo_02_utec.xlsx` (Drive); la sección 4 del Documento Formal debe reflejarlo (hoy el documento está casi vacío: es una dependencia).
+- El modelo lógico vigente es el de la sección 4 del Documento Formal, alineado con las copias v2 de `YELP.sql` y del mapeo (Drive).
 - Asignación de Data Owners del 2026-10-23: Producto → negocio, usuario, check-in y sus dims; Trust & Safety → reseña, tip, fraude, equipos y productos de riesgo; CDO → dimensión fecha y gobierno.
-- Estado actual: el DDL existe en `main` y es idempotente; esta spec sirve de referencia para verificar cobertura contra el documento y limpiar tablas obsoletas.
+- Estado actual: el DDL corre sobre un catálogo vacío y sobre uno poblado, y su validador cubre tablas, COMMENT, Data Owner, nombres, PK, FK y CHECK (evidencia en el notebook).
 - Las claves foráneas son informativas (no exigidas por la plataforma); la integridad referencial efectiva la verifica E5.

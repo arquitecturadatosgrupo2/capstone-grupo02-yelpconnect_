@@ -88,7 +88,7 @@ TABLAS = {
     "GOLD_modelo_dimensional":      ["yelp_gold.gld_dim_fecha", "yelp_gold.gld_dim_negocio", "yelp_gold.gld_dim_usuario",
                                      "yelp_gold.gld_fact_resena", "yelp_gold.gld_fact_checkin_diario"],
     "GOLD_trust_governance":        ["yelp_gold.gld_trust_governance"],
-    "GOLD_vista_power_bi":          ["yelp_gold.gld_vw_fraude_resena"],
+    "GOLD_vista_power_bi":          ["yelp_gold.vw_fraude_resena"],
     "GOLD_vistas_consumo":          ["yelp_gold.vw_vista_principal_resenas", "yelp_gold.vw_analisis_fraude_resenas",
                                      "yelp_gold.vw_analisis_usuarios_riesgo", "yelp_gold.vw_analisis_negocios_sospechosos",
                                      "yelp_gold.vw_metricas_resenas_mensuales"],

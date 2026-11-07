@@ -171,26 +171,26 @@ gld = (senales
 # "promedio_estrellas_otorgadas", sugiriendo el promedio de la muestra (coincide solo en el 21% de
 # usuarios). Se renombra para que ninguna regla ni reporte mezcle poblaciones.
 #
-# gld_vw_fraude_resena es el único consumidor directo de la columna renombrada. Se actualiza por cirugía
+# vw_fraude_resena es el único consumidor directo de la columna renombrada. Se actualiza por cirugía
 # sobre su DDL almacenado (SHOW CREATE TABLE). Ese DDL trae DOS lados: la lista de columnas con COMMENT y
 # el SELECT; la cirugía toca AMBOS en la MISMA posición (nombre en la lista + expresión u.<columna>), o el
 # alias quedaría desalineado. La nueva definición se construye y valida ANTES de tocar el esquema, y si
 # el CREATE falla se revierte el renombrado para no dejar la vista rota para Power BI.
-VISTA = f"{GOLD}.gld_vw_fraude_resena"
+VISTA = f"{GOLD}.vw_fraude_resena"
 vista_existe = spark.catalog.tableExists(VISTA)
 nueva_vista = None
 if vista_existe:
     vdef = spark.sql(f"SHOW CREATE TABLE {VISTA}").first()[0]
     nuevo = vdef.replace("promedio_estrellas_otorgadas", "promedio_estrellas_historico")
     if "n_resenas_dia_registro" in nuevo:
-        print("• gld_vw_fraude_resena ya estaba actualizada")
+        print("• vw_fraude_resena ya estaba actualizada")
     else:
         # Anclas verificadas contra el DDL real de la vista (2026-11-02): la entrada de la lista de
         # columnas lleva COMMENT; la del SELECT va calificada con u. — ambas únicas en su lado.
         a_lista = "promedio_estrellas_historico COMMENT 'Promedio histórico de calificaciones otorgadas por el usuario',"
         a_select = "u.promedio_estrellas_historico,"
         assert a_lista in nuevo and nuevo.count(a_select) == 1, \
-            "❌ gld_vw_fraude_resena no tiene la estructura esperada: revisar su DDL manualmente"
+            "❌ vw_fraude_resena no tiene la estructura esperada: revisar su DDL manualmente"
         nuevo = nuevo.replace(a_lista,
             "promedio_estrellas_historico COMMENT 'Promedio histórico de calificaciones del archivo fuente (no el de la muestra; ninguna regla lo usa)',\n"
             "  n_resenas_dia_registro COMMENT 'Score input de la regla 4 (versión amplia): reseñas extremas de <250 caracteres escritas el día de registro del autor',", 1)
@@ -226,7 +226,7 @@ for columna, comentario in COMENTARIOS_MIGRACION.items():
 if nueva_vista:
     try:
         spark.sql(nueva_vista)
-        print("✔ gld_vw_fraude_resena actualizada (renombrado + n_resenas_dia_registro, lista y SELECT alineados)")
+        print("✔ vw_fraude_resena actualizada (renombrado + n_resenas_dia_registro, lista y SELECT alineados)")
     except Exception:
         # revertir el renombrado de esta corrida: la vista vieja vuelve a resolver y Power BI no se rompe
         if primera_migracion:
@@ -336,7 +336,7 @@ for k, esperado in esperados.items():
 # MAGIC - El score aplica las reglas de usuario **activas** de `slv_fraud_rule`, con el umbral, el mínimo de reseñas y
 # MAGIC   los puntos del catálogo; el código define solo la forma de cada regla. Tope de 100.
 # MAGIC - `reglas_activadas` guarda el linaje regla → caso que consume `gld_trust_governance`.
-# MAGIC - `gld_vw_fraude_resena` se define en `E3_modelo_fisico/02_vista_power_bi`. La celda de migración la ajusta por
+# MAGIC - `vw_fraude_resena` se define en `E3_modelo_fisico/02_vista_power_bi`. La celda de migración la ajusta por
 # MAGIC   cirugía en entornos existentes, tocando lista de columnas y SELECT en la MISMA posición, y revierte el
 # MAGIC   renombrado si el CREATE falla, para no romper el consumo de Power BI.
 # MAGIC - El DDL de E3 quedó alineado con el esquema auditado (renombrado + `n_resenas_dia_registro`); la celda de
