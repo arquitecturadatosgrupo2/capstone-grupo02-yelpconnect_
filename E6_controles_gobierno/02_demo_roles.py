@@ -15,8 +15,8 @@
 # MAGIC | Silver `slv_user.nombre` | ⛔ sin acceso a silver | ✔ en claro |
 # MAGIC | Gold `gld_user_fraud_profile` (riesgo) | ✔ con `****` / NULL | ✔ en claro |
 # MAGIC
-# MAGIC Mientras los integrantes sean admins del workspace (decisión provisional D1), el acceso denegado solo se ve
-# MAGIC con un usuario no admin; las máscaras se ven con cualquiera.
+# MAGIC Ser admin del workspace no concede SELECT (decisión provisional D1): el acceso denegado se ve con cualquier
+# MAGIC cuenta sin GRANT sobre la capa, y las máscaras con cualquier cuenta sin un rol autorizado.
 
 # COMMAND ----------
 

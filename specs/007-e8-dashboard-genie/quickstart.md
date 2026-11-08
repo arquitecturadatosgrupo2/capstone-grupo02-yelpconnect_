@@ -26,4 +26,4 @@ menos una iteración documentada (FR-008).
 
 - Con Steward o Trust & Safety: la página de Negocio muestra niveles de riesgo y reglas en claro.
 - Con un rol de consumo: esas columnas se ven `****`/NULL y la página de Gobierno no carga (sin acceso a
-  `yelp_gov`). Con los integrantes como admins (E6, D1) esta prueba solo se ve con un usuario no admin.
+  `yelp_gov`). La prueba sirve con cualquier cuenta sin rol autorizado ni GRANT sobre `yelp_gov`, sea o no admin.

@@ -135,6 +135,9 @@ Prueba con objetos temporales `tmp_e6_*` en `yelp_gov`, que se borraron al termi
 - ⚠️ **Todos los integrantes son admins del workspace** y el catálogo `workspace` es propiedad del
   grupo `_workspace_admins_…` → como dueños del catálogo, los admins leen todo y **el acceso denegado
   no se puede demostrar** con ellos. Las máscaras sí aplican a admins.
+  **Corrección 2026-11-08:** esta afirmación no se sostuvo. Una cuenta del grupo de admins y dueña del
+  schema recibió `INSUFFICIENT_PERMISSIONS` al leer `yelp_silver` sin GRANT. Ser admin o dueño no concede
+  `SELECT`; permite otorgárselo, y ese GRANT queda en la auditoría.
 - ⚠️ Privilegios ad hoc que contradicen la matriz: `account users` tiene `SELECT` en `yelp_silver` y
   `USE SCHEMA` en `yelp_bronze`; varios integrantes tienen `SELECT` en bronze o `CREATE_TABLE`/`MODIFY`
   en silver y gold; `mateomirandah` tiene privilegios a nivel de catálogo.
@@ -151,7 +154,7 @@ Prueba con objetos temporales `tmp_e6_*` en `yelp_gov`, que se borraron al termi
 > mientras el proyecto está en construcción y se **revisan al cierre del proyecto** (cuando E3–E8 y
 > EX estén en `main`), antes de la sustentación. Ver «Decisiones diferidas» en [plan.md](plan.md).
 
-- **Admins**: no se modifican. Los admins conservan acceso total vía propiedad del catálogo; se
+- **Admins** (ver la corrección del 2026-11-08 arriba): no se modifican. Los admins conservan acceso total vía propiedad del catálogo; se
   documenta como limitación (FR-009). Los GRANT se reconcilian igual contra la matriz (SC-002 mide lo
   otorgado, no lo efectivo para admins). La única cuenta no admin (`freddy.chicomar@softtek.com`) puede
   actuar el rol de consumo en la demo del acceso denegado, si el grupo lo acepta.
