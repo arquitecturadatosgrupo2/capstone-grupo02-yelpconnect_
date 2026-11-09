@@ -629,9 +629,9 @@ print(f"✔ E6 completo · {len(sentencias)} sentencias GRANT/REVOKE/MASK en est
 # MAGIC
 # MAGIC | # | Hoy | Cambio previsto |
 # MAGIC |---|---|---|
-# MAGIC | D1 | Los integrantes son admins del workspace y el grupo de admins es dueño del catálogo: pueden leer todo aunque se les revoque el GRANT. Las máscaras sí les aplican | Quitar admin a quienes no despliegan para que el acceso denegado sea efectivo |
+# MAGIC | D1 | Los integrantes son admins del workspace y el grupo de admins es dueño del catálogo. Ser admin no concede SELECT: el 2026-11-08 una cuenta admin y dueña del schema recibió INSUFFICIENT_PERMISSIONS en silver. Sí puede otorgarse el permiso, y ese GRANT queda en la auditoría. Las máscaras también les aplican | Quitar admin a quienes no despliegan para reducir quién puede otorgarse permisos |
 # MAGIC | D2 | El custodio es una cuenta personal (`mateomirandah`), que también es Steward | Cuenta del grupo como custodio (`run_as` en el bundle y propiedad de las tablas) |
-# MAGIC | D3 | Asignación integrante ↔ rol incompleta | Completar `roles_usuarios.csv` con todo el grupo |
+# MAGIC | D3 | La asignación integrante ↔ rol está definida en la sección 5.1 del Documento Formal, pero `roles_usuarios.csv` solo carga al custodio y steward | Cargar esa asignación en `roles_usuarios.csv` (fuera de Git) antes de re-ejecutar E6: la reconciliación revoca los GRANT por schema de quien no tiene rol |
 # MAGIC | D4 | Ven en claro: steward, trust_safety y custodio | Ratificar con los Data Owners |
 # MAGIC
 # MAGIC ### Definition of Done (E6)
@@ -642,5 +642,5 @@ print(f"✔ E6 completo · {len(sentencias)} sentencias GRANT/REVOKE/MASK en est
 # MAGIC - [x] Re-ejecutable: la segunda corrida no ejecuta sentencias (FR-007).
 # MAGIC - [ ] 0 accesos en claro fuera del rol autorizado, verificado con los integrantes (SC-001; pendiente D3).
 # MAGIC - [ ] Captura del linaje de extremo a extremo; el salto al dashboard llega con E8 (SC-004).
-# MAGIC - [ ] Demo de permisos en vivo en menos de 10 minutos con `02_demo_roles` (SC-005; acceso denegado depende de D1).
+# MAGIC - [ ] Demo de permisos en vivo en menos de 10 minutos con `02_demo_roles` (SC-005).
 # MAGIC - [ ] En `main` vía PR revisado por otro integrante.

@@ -103,7 +103,7 @@ notebook de controles (custodio) y uno de demo (cualquier integrante). No se mod
 | `SET MASK` no disponible en Free Edition | ✅ Funciona con tabla de mapeo + `current_user()`; plan B descartado |
 | `information_schema.column_masks` ausente | ✅ Existe; es la base del validador de cobertura |
 | Grants amplios heredados | ⚠️ `account users` con SELECT en silver y USE SCHEMA en bronze, más grants ad hoc por integrante → la reconciliación los revoca y deja evidencia «antes/después» |
-| Integrantes con admin del workspace | ⚠️ Los 6 son admins (dueños del catálogo). Decisión: no se tocan; limitación documentada; demo de acceso denegado con la cuenta no admin si el grupo acepta |
+| Integrantes con admin del workspace | ⚠️ Los 6 son admins (dueños del catálogo). Decisión: no se tocan; limitación documentada. Ser admin no concede SELECT (corrección del 2026-11-08 en research.md) |
 | Custodio = cuenta personal | Decisión: se mantiene `mateomirandah` (steward + custodio) |
 | Máscara con subconsulta exige SELECT en `gov_*` al consultante | Pendiente: verificar con un usuario no admin; si aplica, otorgar SELECT en `gov_rol_usuario`/`gov_politica_mascara` a los roles de lectura |
 
@@ -115,7 +115,7 @@ cambiarlas editando las tablas `gov_*` o el CSV de roles y volviendo a ejecutar 
 
 | # | Decisión provisional | Cambio previsto al cierre | Dónde se aplica |
 |---|---|---|---|
-| D1 | Los 6 integrantes siguen como admins del workspace | Quitar admin a quienes no despliegan, para que el acceso denegado sea efectivo | Configuración del workspace (manual) + re-ejecutar la demo |
+| D1 | Los 6 integrantes siguen como admins del workspace | Quitar admin a quienes no despliegan, para reducir quién puede otorgarse permisos | Configuración del workspace (manual) + re-ejecutar la demo |
 | D2 | Custodio = `mateomirandah` (corre el job, dueño de 26 tablas, además es Steward) | Custodio = cuenta del grupo: `run_as` en el bundle + transferir la propiedad de tablas | `resources/capstone_yelp.job.yml`, `ALTER TABLE … OWNER TO`, `gov_rol_usuario` |
 | D3 | Asignación integrante ↔ rol incompleta (Yovani no invitado; Freddy con 2 cuentas) | Completar `roles_usuarios.csv` y depurar la cuenta duplicada | CSV en el volumen de artefactos |
 | D4 | Ven en claro: `steward`, `trust_safety`, `custodio` | Ratificar con los Data Owners | `gov_politica_mascara` |
