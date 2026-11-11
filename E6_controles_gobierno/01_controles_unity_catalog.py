@@ -121,7 +121,7 @@ cargar(f"{GOV}.gov_rol", [
     Row(rol="operaciones_comerciales", nombre_rol="Operaciones Comerciales", tipo="consumo",
         descripcion="Consume productos de datos gold"),
     Row(rol="data_science", nombre_rol="Data Science", tipo="consumo",
-        descripcion="Explora silver y gold para análisis y modelos"),
+        descripcion="Explora el modelo estrella y los productos de datos gold para análisis y modelos"),
     Row(rol="custodio", nombre_rol="Custodio (pipeline)", tipo="tecnico",
         descripcion="Identidad que ejecuta el job y es dueña de las tablas; escribe todas las capas"),
 ])
